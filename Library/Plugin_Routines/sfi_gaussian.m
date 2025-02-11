@@ -3,8 +3,8 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
     form = @(coeffs,x) coeffs(1) * exp(-(x-coeffs(2)).^2 ./ (2*coeffs(3)^2)) + coeffs(4);
 
     indVarField = 'imagevcoAtom';
+    % depVarField = 'sfiIntegral_roi1';
     depVarField = 'sfiIntegral';
-    
    
 
     function x0 = initial_guess(x, y)
@@ -12,7 +12,9 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
         x0 = zeros(4,1);
         x0(1) = max(y);
         x0(2) = sum(x.*y)/sum(y);
+        x0(2) = 320;
         x0(3) = sqrt(sum((x-x0(2)).^2.*y)/sum(y));
+        x0(3) = 2;
         x0(4) = min(y);
 
     end
@@ -87,7 +89,8 @@ function h = myfitplot(x,y,analyVar,i)
         'MarkerSize', analyVar.markerSize,...
         'MarkerFaceColor', analyVar.COLORS(i,:),...
         'MarkerEdgeColor', 'none',...
-        'Color', analyVar.COLORS(i,:));
+        'Color', analyVar.COLORS(i,:),...
+        'LineWidth',5);
 end
 
 function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)

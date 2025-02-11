@@ -31,7 +31,7 @@ quickFit = 1;     % 1 to limit background evaluations, 0 for no limit.
 %% Independant Variable
 Choose_Var_from_File = 0; %if 1, prompt user to select file containing values of the independant variable to plot against.
 
-%% Load in data from .mat instead of batch files
+%% Load in data from .mat instead of batch file s
     LoadData = 0; %set to 1 to use already existing .mat files to load data instead of loading in from the .mcs files
     DataName = ['1819' '.mat'];
 %% LINESHAPE FITTING
@@ -89,7 +89,7 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'average_plot_fitted_SFI',...       %42
                     'Fit_Template', ...                 %43 
                     'beating_horizontal_trap_frequencies', ... %44
-                    'vertical_trap_frequency', ...      %45
+                    'vertical_trap_frequency', ...      %45 
                     'horizontal_trap_frequency', ...    %46
                     'bec_rydberg_lifetime',...          %47
                     'sinc_squared_lineshape',...        %48
@@ -103,17 +103,28 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'lorentzian_lineshape'...           %56
                     'normalize_plot'...                 %57 normalizes plot based on atomic, dimer and trimer Rydberg lines.
                     'exponentialfit'...                 %58 exponential fit to field.
-                    'threebodylossfit'...               %59 double exponential fit to a depVarfield.
+                    'threebodylossfit'...               %59 double exponential fit to a depVarfield
+                    'average_plot_two_vars'...          %60 double exponential fit to a depVarfield.
                         };
-%plugInVec = [34,35];
-plugInVec = [];
+%plugInVec = [21,26,34,33,38];
+%plugInVec = [57,21,38];
+%plugInVec = [26, 58];
+plugInVec = [21,26];
 
-UseImages = 1;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
-UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
+%% Global Filters
+AtomNumLims = [0 10000]*10^9;                                               % Atomnumber by absorption (real number) or by fluorescence imaging (arb. units).
+SpecBeam1Lims = [0.1 0.2];                                                  % Spec Beam1 power mon PD.
+SpecBeam2Threshold = -0.0071;                                               % 826 Transmission power mon PD.
+ZeemanPD = [1.1 1.5];                                                       % Zeeman 461 nm Beam power mon PD.
+IR_MOTCavPD = [3 5];                                                      % 922 nm Beam power mon PD before MOT cavity.
+Blue_MOTCavPD = [0.1 0.2];                                                  % 461 nm Beam power mon PD from MOT cavity.
+%%
+UseImages = 0;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
+UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 % Common Plotting flags
 
-    lcl_logicFitLine = zeros(1,length(lcl_validFitLine));
+    lcl_logicFitLine = zeros(1,length(lcl_validFitLine)); 
 if isempty(plugInVec )~= 1
     lcl_logicFitLine(plugInVec) = 1;
 end
@@ -121,10 +132,10 @@ end
 % EXPERIMENTAL OPTIONS AND SETTINGS
 %%-----------------------------------------------------------------------%%
 %%%% MCS ROI select options - selects the roi to perform SFI integral upon
-roi1_minimum = 11;
-roi1_maximum = 83;
-roi2_minimum = 84;
-roi2_maximum = 200;
+roi1_minimum = 2;
+roi1_maximum = 87;
+roi2_minimum = 88;
+roi2_maximum = 130;
 
 %%%% Atom cloud properties
 sampleType     = 'Thermal';  % Options are Thermal, BEC, or Lattice
@@ -140,8 +151,8 @@ CCDbinning     = 1;  % Number of pixels binned when first recording data
 TempXY         = 0; % set to 1 if Temp will be the geometric mean of TempX and TempY, otherwise Temp will equal TempX
 
 %%%% Rydberg properties
-quantumNumberN = 72; %principal quantum number n
-state = '3S1'; %term symbol for rydberg state (2S+1)L(J)
+quantumNumberN = 44; %principal quantum number n
+state = '1S0'; %term symbol for rydberg state (2S+1)L(J)
 quantumDefect = 0;
 switch state
     case '3S1'
@@ -159,7 +170,7 @@ switch state
 end
 
 nStar = quantumNumberN - quantumDefect;
-mcs_roi = [8 -1];
+mcs_roi = [1 -1];
 
 positive_ramp_file = './ramps/n120/35v_pos.csv';
 negative_ramp_file = './ramps/n120/35v_neg.csv';
@@ -205,7 +216,7 @@ lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to ra
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -223,7 +234,7 @@ TimeOrDetune  = 'Frequency'; % Valid options are 'Time', 'Detuning', 'Repetition
 
 titleFontSize = 18;
 axisfontsize  = 14;
-markerSize    = 5;
+markerSize    = 6;
 
 scalesize = 1.5; % set to one for PRL size plots
 FCmarkerSize    = 3*scalesize;
@@ -497,7 +508,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_TestingBlueMOT';
+analyPrefix     = '_searchingforrydberg';
 analyOutputName = 'Analysis';
 
 %Two assumptions are made here,

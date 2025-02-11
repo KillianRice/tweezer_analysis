@@ -160,7 +160,7 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                 myAnnotate(avg_coeffs{i}, avg_unc{i}, coeffNames, coeffUnits);
                 xlabel(xlabeltext,'Interpreter','none');
                 ylabel(ylabeltext,'Interpreter','none');
-                legend(num2str(scanIDs(i)));
+                legend(num2str(scanIDs(i)),'Data','Fit');
                 set(gca, 'YScale', yAxisScale);
                 set(gca, 'XScale', xAxisScale);
                 title(strcat([fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' \nu = ',...
@@ -224,7 +224,7 @@ end
 
 function an = defaultAnnotate(coeffs, err, coeffNames, coeffUnits)
     
-    dim = [.7 .5 .3 .3];
+    dim = [.32 .4 .3 .3];
     
     if isempty(coeffNames)
         for i = 1:numel(coeffs)

@@ -4,16 +4,16 @@ function funcOut = DAQ_voltages(analyVar, indivDataset, avgDataset)
     
     time_axis = 1; % if 1 plots against time axis, else plots against imagevcoatom
 
-    use_channels = [1 0 0 0 0 1 0 0]; % which channels to plot
+    use_channels = [1 1 1 1 1 0 1 0]; % which channels to plot
     
-    channel_names = {'UV PD Mon (V)',...        % AI 0
-                    'Red Spec Power Mon (V)',...% AI 1
-                    'DigiLock_DIO',...          % AI 2
-                    'Lin_Spec',...              % AI 3
-                    'Spin-Pol',...              % AI 4
-                    'Red Spec Power Mon2 (V)',...                      % AI 5
-                    '',...                      % AI 6
-                    '',...                      % AI 7
+    channel_names = {'922nmMOTCavityPD (V)',...                             % AI 0
+                    '461nmZeemanPD (V)',...                                 % AI 1
+                    '413nm_monPD',...                                       % AI 2
+                    '461nm_MOTPD',...                                       % AI 3
+                    '461nm_MOTcavityPD',...                                 % AI 4
+                    '',...                                                  % AI 5
+                    '826nm_TransmissionPD (V)',...                          % AI 6
+                    '',...                                                  % AI 7
                     };
     
     daq_line_format = '%{yyyy.MM.dd-HH:mm:ss}D%f%f%f%f%f%f%f%f%f';

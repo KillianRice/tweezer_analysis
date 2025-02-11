@@ -12,82 +12,173 @@ function funcOut = normalize_plot(analyVar, indivDataset, avgDataset)
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
     depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
-    species = 2; % choose what species is being normalized: atom, dimer or trimer.
+    species = 1; % choose what species is being normalized: atom, dimer or trimer.
     weighting = 'gaussian';
-    if species == 1
-        disp('normalizing for Rydberg atom ')
-    end
-    if species == 2
-        disp('Normalizing for Rydberg dimer')   
-    end
-    if species == 3
-        disp('Normalizing for Rydberg trimer')   
-    end
-    [xavg, yavg, yavgerr] = get_averages(analyVar, indivDataset, avgDataset,...
-            indVarField, depVarField, weighting);
-    [uv,~,red,~] = get_daq_averages(analyVar, indivDataset);
-    [num, ~, tx, ~, ty, ~] = get_num_temp_averages(analyVar, indivDataset);
+
+    swapcodes = 1; %Switch between Soumya Legacy code and Nina's manual data entry code
     
-    scanIDs = analyVar.uniqScanList;
-    %disp(uv)
-    %disp(red)
-    figure;
-    hold on;
-    xlim([-0.25,0.25]);
-    for id = 1:length(scanIDs)
-        [maxvalue,offset] = max(yavg{id});
-        avgtemp = (tx(id)*tx(id)*ty(id))^(1/3);
-        if species ==1
-            errorbar(xavg{id}-xavg{id}(offset), yavg{id}/uv(id)/red(id)/num(id), yavgerr{id}/uv(id)/red(id)/num(id),...
-                'LineStyle','-',...
-                'Marker', 'o',...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(id,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(id,:));
-            title('Num.,UV,red power normalized avg plots')
-            xlabel('GHz_synth [MHz]')
-            ylabel('Normalized Signal [arb.]')
-            %legend(num2str(scanIDs(id)))
+    if swapcodes == 1 %Enter manual data entry code
+        if species == 1
+            disp('normalizing for Rydberg atom ')
         end
-        if species ==2
-            qnum = scanIDs(id);
-            disp('ScanIDs are taken as principal quantum numbers to normalize for FC overlap.'); 
-            UVDAQoffset = 0.0144; % check the OneNote Calibration
-            FCexponent = 3.7;
-            y_processed = yavg{id}*avgtemp^(3/2)/(uv(id)+UVDAQoffset)/red(id)/num(id)^2/(qnum-3.371).^FCexponent;
-            y_processed_err = yavgerr{id}*avgtemp^(3/2)/(uv(id)+UVDAQoffset)/red(id)/num(id)^2/(qnum-3.371)^FCexponent;
-            errorbar(xavg{id}-xavg{id}(offset), y_processed,y_processed_err,...
-                'LineStyle','-',...
-                'Marker', 'o',...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(id,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(id,:));
-            title('Num.,Temp.,UV,red power normalized avg plots')
-            xlabel('GHz_synth [MHz]')
-            ylabel('Normalized Signal [arb.]')
-            string = ['FC exponent used = ', num2str(FCexponent)];
-            annotation('textbox',[0.15,0.8,0.3,0.1],'String', string);
-            %legend(num2str(scanIDs(id)))
+        if species == 2
+            disp('Normalizing for Rydberg dimer')   
         end
-        if species ==3
-            errorbar(xavg{id}-xavg{id}(offset), yavg{id}*avgtemp^(3)/uv(id)/red(id)/num(id)^3, yavgerr{id}*avgtemp^(3)/uv(id)/red(id)/num(id)^3,...
-                'LineStyle','-',...
-                'Marker', 'o',...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(id,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(id,:));
-            title('Num.,Temp.,UV,red power normalized avg plots')
-            xlabel('GHz_synth [MHz]')
-            ylabel('Normalized Signal [arb.]')
-            %legend(num2str(scanIDs(id)))
+        if species == 3
+            disp('Normalizing for Rydberg trimer')   
         end
+        [xavg, yavg, yavgerr] = get_averages(analyVar, indivDataset, avgDataset,...
+                indVarField, depVarField, weighting);
+        disp(yavg{1});
+        %[uv,~,red,~] = get_daq_averages(analyVar, indivDataset);
+
+        [num, ~, tx, ~, ty, ~] = get_num_temp_averages(analyVar, indivDataset);
+        
+        disp(num)
+        scanIDs = analyVar.uniqScanList;
+
+        uv = zeros(1,length(scanIDs));%create arrays to store user inputted power 
+        red = zeros(1,length(scanIDs));
+        %disp(uv)
+        %disp(red)
+        figure;
+        hold on;
+        xlim([xavg{1}(1), xavg{1}(length(xavg{1}))]);
+        for id = 1:length(scanIDs)
+            [maxvalue,offset] = max(yavg{id});
+            %%%%One can manually change the power of the beams below:
+            uv(id) = 45; %mW value
+            red(id) = 2.08; %mW value
+            avgtemp = (tx(id)*tx(id)*ty(id))^(1/3);
+            if species ==1
+                errorbar(xavg{id}, yavg{id}/(uv(id)*red(id)), yavgerr{id}/(uv(id)*red(id)),...
+                    'LineStyle','-',...
+                    'Marker', 'o',...
+                    'MarkerSize', analyVar.markerSize,...
+                    'MarkerFaceColor', analyVar.COLORS(id,:),...
+                    'MarkerEdgeColor', 'none',...
+                    'Color', analyVar.COLORS(id,:));
+                title('461nm, 413nm power normalized avg plots')
+                xlabel('GHz Synth [MHz]')
+                ylabel('Normalized Signal [arb.]')
+                %legend(num2str(scanIDs(id)))
+            end
+            if species ==2
+                qnum = scanIDs(id);
+                disp('ScanIDs are taken as principal quantum numbers to normalize for FC overlap.'); 
+                UVDAQoffset = 0.0144; % check the OneNote Calibration
+                FCexponent = 3.7;
+                y_processed = yavg{id}*avgtemp^(3/2)/(uv(id)+UVDAQoffset)/red(id)/num(id)^2/(qnum-3.371).^FCexponent;
+                y_processed_err = yavgerr{id}*avgtemp^(3/2)/(uv(id)+UVDAQoffset)/red(id)/num(id)^2/(qnum-3.371)^FCexponent;
+                errorbar(xavg{id}-xavg{id}(offset), y_processed,y_processed_err,...
+                    'LineStyle','-',...
+                    'Marker', 'o',...
+                    'MarkerSize', analyVar.markerSize,...
+                    'MarkerFaceColor', analyVar.COLORS(id,:),...
+                    'MarkerEdgeColor', 'none',...
+                    'Color', analyVar.COLORS(id,:));
+                title('Num.,Temp.,UV,red power normalized avg plots')
+                xlabel('GHz_synth [MHz]')
+                ylabel('Normalized Signal [arb.]')
+                string = ['FC exponent used = ', num2str(FCexponent)];
+                annotation('textbox',[0.15,0.8,0.3,0.1],'String', string);
+                %legend(num2str(scanIDs(id)))
+            end
+            if species ==3
+                errorbar(xavg{id}-xavg{id}(offset), yavg{id}*avgtemp^(3)/uv(id)/red(id)/num(id)^3, yavgerr{id}*avgtemp^(3)/uv(id)/red(id)/num(id)^3,...
+                    'LineStyle','-',...
+                    'Marker', 'o',...
+                    'MarkerSize', analyVar.markerSize,...
+                    'MarkerFaceColor', analyVar.COLORS(id,:),...
+                    'MarkerEdgeColor', 'none',...
+                    'Color', analyVar.COLORS(id,:));
+                title('Num.,Temp.,UV,red power normalized avg plots')
+                xlabel('GHz_synth [MHz]')
+                ylabel('Normalized Signal [arb.]')
+                %legend(num2str(scanIDs(id)))
+            end
+        end
+        hold off;
+        legend(num2str(scanIDs))
+        funcOut.analyVar = analyVar;
+        funcOut.indivDataset = indivDataset;
+        funcOut.avgDataset = avgDataset;
+
+    else %enter Soumya Legacy code where beam intensity data is extracted from the DAQ
+        if species == 1
+            disp('normalizing for Rydberg atom ')
+        end
+        if species == 2
+            disp('Normalizing for Rydberg dimer')   
+        end
+        if species == 3
+            disp('Normalizing for Rydberg trimer')   
+        end
+        [xavg, yavg, yavgerr] = get_averages(analyVar, indivDataset, avgDataset,...
+                indVarField, depVarField, weighting);
+        [uv,~,red,~] = get_daq_averages(analyVar, indivDataset);
+        [num, ~, tx, ~, ty, ~] = get_num_temp_averages(analyVar, indivDataset);
+        
+        scanIDs = analyVar.uniqScanList;
+        %disp(uv)
+        %disp(red)
+        figure;
+        hold on;
+        xlim([100,400]);
+        for id = 1:length(scanIDs)
+            [maxvalue,offset] = max(yavg{id});
+            avgtemp = (tx(id)*tx(id)*ty(id))^(1/3);
+            if species ==1
+                errorbar(xavg{id}-xavg{id}(offset), yavg{id}/uv(id)/red(id)/num(id), yavgerr{id}/uv(id)/red(id)/num(id),...
+                    'LineStyle','-',...
+                    'Marker', 'o',...
+                    'MarkerSize', analyVar.markerSize,...
+                    'MarkerFaceColor', analyVar.COLORS(id,:),...
+                    'MarkerEdgeColor', 'none',...
+                    'Color', analyVar.COLORS(id,:));
+                title('Num.,UV,red power normalized avg plots')
+                xlabel('GHz_synth [MHz]')
+                ylabel('Normalized Signal [arb.]')
+                %legend(num2str(scanIDs(id)))
+            end
+            if species ==2
+                qnum = scanIDs(id);
+                disp('ScanIDs are taken as principal quantum numbers to normalize for FC overlap.'); 
+                UVDAQoffset = 0.0144; % check the OneNote Calibration
+                FCexponent = 3.7;
+                y_processed = yavg{id}*avgtemp^(3/2)/(uv(id)+UVDAQoffset)/red(id)/num(id)^2/(qnum-3.371).^FCexponent;
+                y_processed_err = yavgerr{id}*avgtemp^(3/2)/(uv(id)+UVDAQoffset)/red(id)/num(id)^2/(qnum-3.371)^FCexponent;
+                errorbar(xavg{id}-xavg{id}(offset), y_processed,y_processed_err,...
+                    'LineStyle','-',...
+                    'Marker', 'o',...
+                    'MarkerSize', analyVar.markerSize,...
+                    'MarkerFaceColor', analyVar.COLORS(id,:),...
+                    'MarkerEdgeColor', 'none',...
+                    'Color', analyVar.COLORS(id,:));
+                title('Num.,Temp.,UV,red power normalized avg plots')
+                xlabel('GHz_synth [MHz]')
+                ylabel('Normalized Signal [arb.]')
+                string = ['FC exponent used = ', num2str(FCexponent)];
+                annotation('textbox',[0.15,0.8,0.3,0.1],'String', string);
+                %legend(num2str(scanIDs(id)))
+            end
+            if species ==3
+                errorbar(xavg{id}-xavg{id}(offset), yavg{id}*avgtemp^(3)/uv(id)/red(id)/num(id)^3, yavgerr{id}*avgtemp^(3)/uv(id)/red(id)/num(id)^3,...
+                    'LineStyle','-',...
+                    'Marker', 'o',...
+                    'MarkerSize', analyVar.markerSize,...
+                    'MarkerFaceColor', analyVar.COLORS(id,:),...
+                    'MarkerEdgeColor', 'none',...
+                    'Color', analyVar.COLORS(id,:));
+                title('Num.,Temp.,UV,red power normalized avg plots')
+                xlabel('GHz_synth [MHz]')
+                ylabel('Normalized Signal [arb.]')
+                %legend(num2str(scanIDs(id)))
+            end
+        end
+        hold off;
+        legend(num2str(scanIDs))
+        funcOut.analyVar = analyVar;
+        funcOut.indivDataset = indivDataset;
+        funcOut.avgDataset = avgDataset;  
     end
-    hold off;
-    legend(num2str(scanIDs))
-    funcOut.analyVar = analyVar;
-    funcOut.indivDataset = indivDataset;
-    funcOut.avgDataset = avgDataset;
-end    

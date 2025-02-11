@@ -12,11 +12,11 @@ function funcOut = Autler_Townes_fit(analyVar, indivDataset, avgDataset)
     
     %% initial guess code
     function initialguess = x0(xdata, ydata)
-        initialguess = [1,1048.9,0.1,1,1049.3,0.1,0];
+        initialguess = [1,306,2,1,315,2,30];
         initialguess(1) = max(ydata)-min(ydata);
         initialguess(4) = initialguess(1);
-        initialguess(3) = (max(xdata)-min(xdata))/20;
-        initialguess(6) = initialguess(3);
+        %initialguess(3) = (max(xdata)-min(xdata))/20;
+        %initialguess(6) = initialguess(3);
     end
 
 
@@ -73,7 +73,7 @@ function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
             strs{i}
         end
     end
-    strs{7} = ['\sigma_2-\sigma_1 :',unc_string(coeffs(5)-coeffs(2),err(5)+err(2)),' ', 'MHz']
+    strs{7} = ['\sigma_2-\sigma_1 :',unc_string(coeffs(5)-coeffs(2),err(5)+err(2)),' ', 'MHz'];
     
     an = annotation('textbox', dim, 'String', strjoin(strs),...
         'FitBoxToText', 'on', 'BackgroundColor', 'white');

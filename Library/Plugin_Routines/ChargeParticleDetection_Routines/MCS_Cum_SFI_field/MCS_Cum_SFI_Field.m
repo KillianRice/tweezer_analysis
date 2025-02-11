@@ -14,8 +14,7 @@ function indivDataset = MCS_Cum_SFI_Field( analyVar, indivDataset, avgDataset)
         indivDataset{i}.cumSFI(:,1) = indivDataset{i}.mcsSpectra{1}(:,1);
         
         totsfi = zeros(size(indivDataset{i}.mcsSpectra{1}(:,2:end)));
-        for j = 1:indivDataset{i}.CounterAtom
-            
+        for j = 1:indivDataset{i}.CounterAtom           
             totsfi = totsfi + indivDataset{i}.mcsSpectra{j}(:,2:end);
             
         end

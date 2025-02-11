@@ -1,11 +1,11 @@
 function funcOut = lorentzian_lineshape(analyVar, indivDataset, avgDataset)
     
-    % Autler_Townes_fit - Soumya K kanungo 2020.07.31
-    % Fits MCS data to a typical double lorentzian. Change the form if you
-    % need something else like a double gaussian.
+    % Lorentzian fit - Soumya K kanungo 2020.07.31
+    % Fits field to a typical lorentzian. 
     
     form = @(coeffs, x) coeffs(1)...
         .*(coeffs(3).^2)./((x-coeffs(2)).^2+coeffs(3).^2) + coeffs(4);
+    
     indVarField = 'imagevcoAtom'; % independent variable
     depVarField = 'sfiIntegral'; % dependent variable
     
@@ -53,7 +53,7 @@ function funcOut = lorentzian_lineshape(analyVar, indivDataset, avgDataset)
         'CoeffNames', {{'Amp1.', '\mu_1.', '\sigma_1'}},...
         'CoeffUnits', {{'','MHz','MHz'}},...
         'AnnotateFunction', @myAnnotate,...
-        'PlotInitialGuess', false);
+        'PlotInitialGuess', true);
     base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)
     
     funcOut.analyVar = analyVar;
