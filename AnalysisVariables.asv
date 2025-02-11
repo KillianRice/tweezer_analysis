@@ -105,19 +105,23 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'exponentialfit'...                 %58 exponential fit to field.
                     'threebodylossfit'...               %59 double exponential fit to a depVarfield
                     'average_plot_two_vars'...          %60 double exponential fit to a depVarfield.
+                    'custom'...
                         };
-plugInVec = [34];
+%plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
 %plugInVec = [26, 58];
-%plugInVec = [21];
-
+plugInVec = [21,26];
+%%-----------------------------------------------------------------------%%
 %% Global Filters
-AtomNumLims = [100 200]*10^9;       % Atomnumber by absorption (real number) or by fluorescence imaging (arb. units).
-SpecBeam1Lims = [1 2];              % Spec Beam power mon PD>
-SpecBeam1Lims = [1 2];
-
-
-%%
+%%-----------------------------------------------------------------------%%
+AtomNumLims = [0 10000]*10^9;                                               % Atomnumber by absorption (real number) or by fluorescence imaging (arb. units).
+SpecBeam1Lims = [0.1 0.2];                                                  % Spec Beam1 power mon PD.
+SpecBeam2Threshold = -0.0071;                                               % 826 Transmission power mon PD.
+ZeemanPD = [1.1 1.5];                                                       % Zeeman 461 nm Beam power mon PD.
+IR_MOTCavPD = [3 5];                                                        % 922 nm Beam power mon PD before MOT cavity.
+Blue_MOTCavPD = [0.1 0.2];                                                  % 461 nm Beam power mon PD from MOT cavity.
+%%-----------------------------------------------------------------------%%
+%% Types of Data: Image, MCS, etc.
 UseImages = 0;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
 UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
@@ -150,6 +154,7 @@ CCDbinning     = 1;  % Number of pixels binned when first recording data
 TempXY         = 0; % set to 1 if Temp will be the geometric mean of TempX and TempY, otherwise Temp will equal TempX
 
 %%%% Rydberg properties
+%%-----------------------------------------------------------------------%%
 quantumNumberN = 44; %principal quantum number n
 state = '1S0'; %term symbol for rydberg state (2S+1)L(J)
 quantumDefect = 0;

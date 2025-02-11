@@ -77,7 +77,6 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
             y{id}(i) = mean(tempy(1:num));
             yerr{id}(i) = std(tempy(1:num))/sqrt(num);
         end
-        %y{id}
         AvgSig(id) = mean(y{id}); % use this to average over the independent variable and get a scalar for each scanID
         AvgSig_err(id) = std(y{id}); % use this to std over the independent variable and get a scalar for each scanID
     end
@@ -103,135 +102,20 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     ylabel('Total MCS Counts');
     hold off
 
-    %% Custom plot
-    %state number of different plots to place onto same figuer
-    numberOfPlots = 7;
-    %create list for x, y, and error values
-    lsx = cell(1,numberOfPlots);
-    lsy = cell(1,numberOfPlots);
-    lserr = cell(1,numberOfPlots);
-    %scan through all the files.
-    %Each if statement grabs the files with the same decimal value in their
-    %ID and will place them in the same list
-    for id = 1:length(scanIDs)
-
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .1)
-            lsx{1}{end+1} = scanIDs(id)*80e-3;
-            lsy{1}{end+1} = AvgSig(id);
-            lserr{1}{end+1} = AvgSig_err(id);
-        end
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .2)
-            lsx{2}{end+1} = scanIDs(id)*80e-3;
-            lsy{2}{end+1} = AvgSig(id);
-            lserr{2}{end+1} = AvgSig_err(id);
-        end
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .3)
-            lsx{3}{end+1} = scanIDs(id)*80e-3;
-            lsy{3}{end+1} = AvgSig(id);
-            lserr{3}{end+1} = AvgSig_err(id);
-        end
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .4)
-            lsx{4}{end+1} = scanIDs(id)*80e-3;
-            lsy{4}{end+1} = AvgSig(id);
-            lserr{4}{end+1} = AvgSig_err(id);
-        end
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .5)
-            lsx{5}{end+1} = scanIDs(id)*80e-3;
-            lsy{5}{end+1} = AvgSig(id);
-            lserr{5}{end+1} = AvgSig_err(id);
-        end
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .6)
-            lsx{6}{end+1} = scanIDs(id)*80e-3;
-            lsy{6}{end+1} = AvgSig(id);
-            lserr{6}{end+1} = AvgSig_err(id);
-        end
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .7)
-            lsx{7}{end+1} = scanIDs(id)*80e-3;
-            lsy{7}{end+1} = AvgSig(id);
-            lserr{7}{end+1} = AvgSig_err(id);
-        end
-   
-        %%%Original code here
-        %    errorbar(scanIDs*80e-3, AvgSig, AvgSig_err,...
-        %        'LineStyle','none',...
-        %        'Marker', analyVar.MARKERS2(1),...
-        %        'MarkerSize', analyVar.markerSize,...
-        %        'MarkerFaceColor', analyVar.COLORS(1,:),...
-        %        'MarkerEdgeColor', 'none',...
-        %        'Color', analyVar.COLORS(1,:));
-    end
-    
-    %Plot all the different groups depening on how many stated above
-    labels = {"Coil ON 65A, MOT OFF, ZM ON", "Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 65 A, MOT ON", "Coil OFF, MOT ON", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
-    
-    for plots = 1:numberOfPlots
-        figure;
-        x = cell2mat(lsx{plots});
-        y = cell2mat(lsy{plots});
-        err = cell2mat(lserr{plots});
-        errorbar(x, y, err,...
-                'LineStyle','none',...
-                'Marker', analyVar.MARKERS2(1),...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(plots,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(plots,:));
-        legend(labels{plots})
-        title('SFI signal dependence vs time of experiment')
-        xlabel('Total time for MCS Data (ms)')
-        ylabel('Total MCS Counts')
-    end
-    labels = {"Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
-    figure;
-    hold on;
-    for plots = 1:numberOfPlots
-        if(plots == 1)
-            continue
-        end
-        if(plots == 4)
-            continue
-        end
-        if(plots == 5)
-            continue
-        end
-        x = cell2mat(lsx{plots});
-        y = cell2mat(lsy{plots});
-        err = cell2mat(lserr{plots});
-        errorbar(x, y, err,...
-                'LineStyle','none',...
-                'Marker', analyVar.MARKERS2(1),...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(plots,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(plots,:));
-    end
-
-    %for plots = 1:numberOfPlots
-    %    if(plots == 1)
-    %        continue
-    %    end
-    %    if(plots == 4)
-    %        continue
-    %    end
-    %    if(plots == 5)
-    %        continue
-    %    end
-    %    x = cell2mat(lsx{plots});
-    %    y = cell2mat(lsy{plots});
-    %    err = cell2mat(lserr{plots});
-    %    errorbar(x, y, err,...
-    %            'LineStyle','none',...
-    %            'Marker', analyVar.MARKERS2(1),...
-    %            'MarkerSize', analyVar.markerSize,...
-    %            'MarkerFaceColor', analyVar.COLORS(plots,:),...
-    %            'MarkerEdgeColor', 'none',...
-    %            'Color', analyVar.COLORS(plots,:));
-    %end
-    legend(labels)
-    title('SFI signal dependence vs time of experiment')
-    xlabel('Total time for MCS Data (ms)')
-    ylabel('Total MCS Counts')
-    hold off
+    %% PLot
+    % figure;
+    % hold on;
+    % errorbar(scanIDs*80e-3, AvgSig, AvgSig_err,...
+    %    'LineStyle','none',...
+    %    'Marker', analyVar.MARKERS2(1),...
+    %    'MarkerSize', analyVar.markerSize,...
+    %    'MarkerFaceColor', analyVar.COLORS(1,:),...
+    %    'MarkerEdgeColor', 'none',...
+    %    'Color', analyVar.COLORS(1,:));
+    % title('SFI signal dependence vs time of experiment');
+    % xlabel('Total time for MCS Data (ms)');
+    % ylabel('Total MCS Counts');
+    % hold off
 
     % figure;
     % hold on;
@@ -249,6 +133,7 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     % xlabel('826 nm Synth with doubler ON [MHz]')
     % ylabel('Normalized by total signal MCS Counts')
     % hold off
+    
     funcOut.analyVar = analyVar;
     funcOut.indivDataset = indivDataset;
     funcOut.avgDataset = avgDataset;

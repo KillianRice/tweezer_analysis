@@ -2,13 +2,13 @@ function [xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, a
 
     xdata = cell(analyVar.numBasenamesAtom,1);                              % unfiltered data X initialized
     ydata = cell(analyVar.numBasenamesAtom,1);                              % unfiltered data Y initialized
-    xdata_clean = cell(analyVar.numBasenamesAtom,1);                     % filtered data X initialized
-    ydata_clean = cell(analyVar.numBasenamesAtom,1);                     % filtered data X initialized
+    xdata_clean = cell(analyVar.numBasenamesAtom,1);                        % filtered data X initialized
+    ydata_clean = cell(analyVar.numBasenamesAtom,1);                        % filtered data X initialized
 
     %% Adding DAQ voltages to the indivDataset struct.
     numchannels = 8;
-    time_axis = 1; % if 1 plots against time axis, else plots against imagevcoatom
-    use_channels = [1 1 1 1 1 0 1 0]; % which channels to plot
+    time_axis = 1;                                                          % if 1 plots against time axis, else plots against imagevcoatom
+    use_channels = [1 1 1 1 1 0 1 0];                                       % which channels to plot
     channel_names = {'922nmMOTCavityPD (V)',...                             % AI 0
                     '461nmZeemanPD (V)',...                                 % AI 1
                     '413nm_monPD',...                                       % AI 2
@@ -36,7 +36,8 @@ function [xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, a
         
     end
 
-    %% Extracting x,y data for each BasenamesAtom
+    %% Extracting x,y data for each BasenamesAtom filtered by the conditions set by find. 
+    % Mainly use PD voltages to look for unlocked lasers and cavities.
     for i = 1:analyVar.numBasenamesAtom
         
         xdata{i} = indivDataset{i}.(indVarField);

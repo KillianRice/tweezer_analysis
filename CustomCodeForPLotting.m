@@ -1,52 +1,16 @@
-function funcOut = average_plot(analyVar, indivDataset, avgDataset)
-    %%% average_plot.m - Joe Whalen 2017.12.15
-    %%% Edited on 2025.02.07 by Soumya Kanungo to include the function
-    %%% 'getxy_filtered' which outputs clean datasets based on predefined
-    %%% Global filters in AnalysisVariables.
-    %%% Make a plot of the average of any quantity in indivDataset grouped
-    %%% by the flags in the master batch file.
+function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
+    %%% CustomCode for BMOT data in 11.11.2024_searchingforrydberg
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    %depVarField = 'numberAtom';
     depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
     
-    %[xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     [xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     scanIDs = analyVar.uniqScanList;
     x = cell(length(scanIDs));
     y = cell(length(scanIDs));
     yerr = cell(length(scanIDs));
-    % for id = 1:length(scanIDs)
-    %     x{id} = [];
-    % 
-    %     for basename = 1:analyVar.numBasenamesAtom
-    %         if scanIDs(id) == analyVar.meanListVar(basename)
-    %            x{id} = union(x{id},xdata{basename});
-    %         end
-    %     end
-    % 
-    %     y{id} = zeros(size(x{id}));
-    %     yerr{id} = zeros(size(x{id}));
-    % 
-    %     tempy = zeros(size(analyVar.meanListVar));
-    %     for i = 1:length(x{id})
-    %         num=0;
-    %         for basename = 1:analyVar.numBasenamesAtom
-    %             if scanIDs(id) == analyVar.meanListVar(basename)
-    %                 for j = 1:indivDataset{basename}.CounterAtom
-    %                     if xdata{basename}(j) == x{id}(i)
-    %                         num = num + 1;
-    %                         tempy(num) = ydata{basename}(j);
-    %                     end
-    %                 end
-    %             end
-    %         end
-    %         num;
-    %         y{id}(i) = mean(tempy(1:num));
-    %         yerr{id}(i) = std(tempy(1:num))/sqrt(num);
-    %     end
-    % end
-%% 
+    
+    % Define the AVG sig scalar for each ScanID in the batch files.
     AvgSig = zeros(size(scanIDs));
     AvgSig_err = zeros(size(scanIDs));
     for id = 1:length(scanIDs)
@@ -114,6 +78,7 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     %Each if statement grabs the files with the same decimal value in their
     %ID and will place them in the same list
     for id = 1:length(scanIDs)
+
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .1)
             lsx{1}{end+1} = scanIDs(id)*80e-3;
             lsy{1}{end+1} = AvgSig(id);
@@ -180,11 +145,19 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
         xlabel('Total time for MCS Data (ms)')
         ylabel('Total MCS Counts')
     end
-    
+    labels = {"Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
     figure;
     hold on;
     for plots = 1:numberOfPlots
-    
+        if(plots == 1)
+            continue
+        end
+        if(plots == 4)
+            continue
+        end
+        if(plots == 5)
+            continue
+        end
         x = cell2mat(lsx{plots});
         y = cell2mat(lsy{plots});
         err = cell2mat(lserr{plots});
@@ -197,18 +170,27 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
                 'Color', analyVar.COLORS(plots,:));
     end
 
-    for plots = 1:numberOfPlots
-        x = cell2mat(lsx{plots});
-        y = cell2mat(lsy{plots});
-        err = cell2mat(lserr{plots});
-        errorbar(x, y, err,...
-                'LineStyle','none',...
-                'Marker', analyVar.MARKERS2(1),...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(plots,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(plots,:));
-    end
+    %for plots = 1:numberOfPlots
+    %    if(plots == 1)
+    %        continue
+    %    end
+    %    if(plots == 4)
+    %        continue
+    %    end
+    %    if(plots == 5)
+    %        continue
+    %    end
+    %    x = cell2mat(lsx{plots});
+    %    y = cell2mat(lsy{plots});
+    %    err = cell2mat(lserr{plots});
+    %    errorbar(x, y, err,...
+    %            'LineStyle','none',...
+    %            'Marker', analyVar.MARKERS2(1),...
+    %            'MarkerSize', analyVar.markerSize,...
+    %            'MarkerFaceColor', analyVar.COLORS(plots,:),...
+    %            'MarkerEdgeColor', 'none',...
+    %            'Color', analyVar.COLORS(plots,:));
+    %end
     legend(labels)
     title('SFI signal dependence vs time of experiment')
     xlabel('Total time for MCS Data (ms)')
