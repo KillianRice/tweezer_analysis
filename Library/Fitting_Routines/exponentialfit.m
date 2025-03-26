@@ -34,7 +34,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
         % can also return a constant vector with length equal to the number
         % of parameters in the fit function
         initialguess(1) = max(ydata);
-        initialguess(2) = max(xdata)-min(xdata)/3;
+        initialguess(2) = (max(xdata)-min(xdata));
         initialguess(3) = min(ydata);
     end
 
@@ -72,7 +72,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
         'PlotIndivFits', false,...
         'PlotAll', false,...
         'PlotAllAvgs', true,...
-        'PlotInitialGuess', true,...
+        'PlotInitialGuess', false,...
         'Statistics', 'gaussian');
     
     base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)

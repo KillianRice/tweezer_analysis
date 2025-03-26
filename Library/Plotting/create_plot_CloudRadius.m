@@ -27,5 +27,9 @@ for basenameNum = 1:analyVar.numBasenamesAtom
     default_plot(analyVar,[basenameNum analyVar.numBasenamesAtom],...
         figNum,radLabel,radTitle,analyVar.timevectorAtom,...
         repmat(indVar,1,2)',[CloudRadX; CloudRadY]);
+    if analyVar.fitModel == 'PureGaussian'
+        str={'Fit Model: $$Z= A(\exp^{-(X^2/2\sigma_x^2-Y^2/2\sigma_y^2)})$$'};
+        annotation('textbox','interpreter','latex','String',str,'FitBoxToText','on')
+    end
 end
 end

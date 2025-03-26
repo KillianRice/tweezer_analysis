@@ -58,6 +58,10 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         default_plot(analyVar,[basenameNum analyVar.numBasenamesAtom],...
             figNum,numLabel,numTitle,analyVar.timevectorAtom,...
             analyVar.funcDataScale(indVar)',sum(winBECNum,1)./sum(winTotNum,1)*100);
+        if analyVar.fitModel == 'PureGaussian'
+            str={'Fit Model: $$Z= A(\exp^{-(X^2/2\sigma_x^2-Y^2/2\sigma_y^2)})$$'};
+            annotation('textbox','interpreter','latex','String',str,'FitBoxToText','on')
+        end
     end
 end
 end

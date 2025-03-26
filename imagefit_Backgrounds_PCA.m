@@ -97,7 +97,12 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         [cutImageAtom, cutImageBack] = cutImageCell{:};
         
         % Generate OD image using Beer's Law (subtract fitted background)
-        OD_Image_Single = (log(abs(cutImageBack)) - log(abs(cutImageAtom)));
+        if analyVar.UseImages_Fluorescence == 0
+            OD_Image_Single = (log(abs(cutImageBack)) - log(abs(cutImageAtom)));
+        end
+        if analyVar.UseImages_Fluorescence == 1
+            OD_Image_Single = (-log(abs(cutImageBack)) + log(abs(cutImageAtom)));
+        end
         
         %%% Save OD
         dlmwrite([analyVar.analyOutDir char(indivDataset{basenameNum}.fileAtom(k)) analyVar.ODimageFilename],OD_Image_Single,'\t');

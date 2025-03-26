@@ -2,9 +2,10 @@ function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
     %%% CustomCode for BMOT data in 11.11.2024_searchingforrydberg
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'numberAtom'; % The field of an indivdataset that is to be plotted on the y axis
     
-    [xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);
+    %[xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);
+    [xdata_clean, ydata_clean] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     scanIDs = analyVar.uniqScanList;
     x = cell(length(scanIDs));
     y = cell(length(scanIDs));
@@ -49,27 +50,42 @@ function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
     avgDataset.(depVarField) = y;
     avgDataset.(strcat(depVarField,'_unc')) = yerr;
     avgDataset.(strcat(depVarField,'_x')) = x;
-    
-    figure;
-    hold on;
-    for id = 1:length(scanIDs)
-        errorbar(x{id}, y{id}, yerr{id},...
-            'LineStyle','-',...
-            'Marker', analyVar.MARKERS2(id),...
-            'MarkerSize', analyVar.markerSize,...
-            'MarkerFaceColor', analyVar.COLORS(id,:),...
-            'MarkerEdgeColor', 'none',...
-            'Color', analyVar.COLORS(id,:));
-    end
-    legend(num2str(scanIDs));
-    title('Trapping- Scanning Mot coil Off time - 60 1D2 Line');
-    xlabel('826 nm Synth with doubler ON [MHz]');
-    ylabel('Total MCS Counts');
-    hold off
+    % 
+    % figure;
+    % hold on;
+    % for id = 1:length(scanIDs)
+    %     errorbar(x{id}, y{id}, yerr{id},...
+    %         'LineStyle','-',...
+    %         'Marker', analyVar.MARKERS2(id),...
+    %         'MarkerSize', analyVar.markerSize,...
+    %         'MarkerFaceColor', analyVar.COLORS(id,:),...
+    %         'MarkerEdgeColor', 'none',...
+    %         'Color', analyVar.COLORS(id,:));
+    % end
+    % legend(num2str(scanIDs));
+    % title('Trapping- Scanning Mot coil Off time - 60 1D2 Line');
+    % xlabel('826 nm Synth with doubler ON [MHz]');
+    % ylabel('Total MCS Counts');
+    % hold off
+    % 
+    % figure;
+    % hold on;
+    % errorbar(scanIDs, AvgSig, AvgSig_err,...
+    %     'LineStyle','-',...
+    %     'Marker', analyVar.MARKERS2(1),...
+    %     'MarkerSize', analyVar.markerSize,...
+    %     'MarkerFaceColor', analyVar.COLORS(1,:),...
+    %     'MarkerEdgeColor', 'none',...
+    %     'Color', analyVar.COLORS(1,:));
+    % %legend(num2str(scanIDs));
+    % title('Variation of Trapped Atoms with Different Zeeman Coil Field Strengths');
+    % xlabel('Zeeman Coil Current (A)');
+    % ylabel('Total Atom Count (Fast Fitting)');
+    % hold off
 
     %% Custom plot
     %state number of different plots to place onto same figuer
-    numberOfPlots = 7;
+    numberOfPlots = 8;
     %create list for x, y, and error values
     lsx = cell(1,numberOfPlots);
     lsy = cell(1,numberOfPlots);
@@ -77,44 +93,56 @@ function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
     %scan through all the files.
     %Each if statement grabs the files with the same decimal value in their
     %ID and will place them in the same list
+    %% Added a hard coded normaliation value to all Avg values
     for id = 1:length(scanIDs)
 
-        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .1)
-            lsx{1}{end+1} = scanIDs(id)*80e-3;
-            lsy{1}{end+1} = AvgSig(id);
-            lserr{1}{end+1} = AvgSig_err(id);
-        end
+        % if (round(scanIDs(id)-floor(scanIDs(id)),1) == .1)
+        %     lsx{1}{end+1} = scanIDs(id)*80e-3;
+        %     lsy{1}{end+1} = AvgSig(id);
+        %     lserr{1}{end+1} = AvgSig_err(id);
+        % end
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .2)
-            lsx{2}{end+1} = scanIDs(id)*80e-3;
-            lsy{2}{end+1} = AvgSig(id);
-            lserr{2}{end+1} = AvgSig_err(id);
+            lsx{1}{end+1} = scanIDs(id);%*80e-3;
+            lsy{1}{end+1} = AvgSig(id);%/AvgSig(16);
+            lserr{1}{end+1} = AvgSig_err(id);%/AvgSig(16);
         end
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .3)
-            lsx{3}{end+1} = scanIDs(id)*80e-3;
-            lsy{3}{end+1} = AvgSig(id);
-            lserr{3}{end+1} = AvgSig_err(id);
+            lsx{2}{end+1} = scanIDs(id);%*80e-3;
+            lsy{2}{end+1} = AvgSig(id);%/AvgSig(1);
+            lserr{2}{end+1} = AvgSig_err(id);%/AvgSig(1);
         end
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .4)
-            lsx{4}{end+1} = scanIDs(id)*80e-3;
-            lsy{4}{end+1} = AvgSig(id);
-            lserr{4}{end+1} = AvgSig_err(id);
+            lsx{3}{end+1} = scanIDs(id);%*80e-3;
+            lsy{3}{end+1} = AvgSig(id);%/AvgSig(31);
+            lserr{3}{end+1} = AvgSig_err(id);%/AvgSig(31);
         end
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .5)
-            lsx{5}{end+1} = scanIDs(id)*80e-3;
-            lsy{5}{end+1} = AvgSig(id);
-            lserr{5}{end+1} = AvgSig_err(id);
+            lsx{4}{end+1} = scanIDs(id);%*80e-3;
+            lsy{4}{end+1} = AvgSig(id);%/AvgSig(17);
+            lserr{4}{end+1} = AvgSig_err(id);%/AvgSig(1);
         end
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .6)
-            lsx{6}{end+1} = scanIDs(id)*80e-3;
-            lsy{6}{end+1} = AvgSig(id);
-            lserr{6}{end+1} = AvgSig_err(id);
+            lsx{5}{end+1} = scanIDs(id);%*80e-3;
+            lsy{5}{end+1} = AvgSig(id);%/AvgSig(33);
+            lserr{5}{end+1} = AvgSig_err(id);%/AvgSig(33);
         end
         if (round(scanIDs(id)-floor(scanIDs(id)),1) == .7)
-            lsx{7}{end+1} = scanIDs(id)*80e-3;
-            lsy{7}{end+1} = AvgSig(id);
-            lserr{7}{end+1} = AvgSig_err(id);
+            lsx{6}{end+1} = scanIDs(id);%*80e-3;
+            lsy{6}{end+1} = AvgSig(id);%/AvgSig(48);
+            lserr{6}{end+1} = AvgSig_err(id);%/AvgSig(48);
         end
-   
+        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .8)
+            lsx{7}{end+1} = scanIDs(id);%*80e-3;
+            lsy{7}{end+1} = AvgSig(id);%/AvgSig(49);
+            lserr{7}{end+1} = AvgSig_err(id);%/AvgSig(49);
+        end
+        if (round(scanIDs(id)-floor(scanIDs(id)),1) == .9)
+            lsx{8}{end+1} = scanIDs(id);%*80e-3;
+            lsy{8}{end+1} = AvgSig(id);%/AvgSig(end);
+            lserr{8}{end+1} = AvgSig_err(id);%/AvgSig(end);
+        end
+
+
         %%%Original code here
         %    errorbar(scanIDs*80e-3, AvgSig, AvgSig_err,...
         %        'LineStyle','none',...
@@ -124,40 +152,17 @@ function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
         %        'MarkerEdgeColor', 'none',...
         %        'Color', analyVar.COLORS(1,:));
     end
-    
+
     %Plot all the different groups depening on how many stated above
-    labels = {"Coil ON 65A, MOT OFF, ZM ON", "Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 65 A, MOT ON", "Coil OFF, MOT ON", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
-    
-    for plots = 1:numberOfPlots
-        figure;
-        x = cell2mat(lsx{plots});
-        y = cell2mat(lsy{plots});
-        err = cell2mat(lserr{plots});
-        errorbar(x, y, err,...
-                'LineStyle','none',...
-                'Marker', analyVar.MARKERS2(1),...
-                'MarkerSize', analyVar.markerSize,...
-                'MarkerFaceColor', analyVar.COLORS(plots,:),...
-                'MarkerEdgeColor', 'none',...
-                'Color', analyVar.COLORS(plots,:));
-        legend(labels{plots})
-        title('SFI signal dependence vs time of experiment')
-        xlabel('Total time for MCS Data (ms)')
-        ylabel('Total MCS Counts')
-    end
-    labels = {"Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
+    %labels = {"Coil ON 65A, MOT OFF, ZM ON", "Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 65 A, MOT ON", "Coil OFF, MOT ON", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
+    labels = {"Fluorescence Image Number", "Absorption Image Number", "MOT Coil = 70A (reverse Polarity)", "MOT Coil = 70A", "MOT Coil = 60A", "MOT Coil = 60A (reverse Polarity)", "MOT Coil = 65A", "MOT Coil = 65A (reverse Polarity)"}
+    Z_current = [0 2 4 6 8 10 12 13]
+    disp(Z_current)
+
     figure;
     hold on;
     for plots = 1:numberOfPlots
-        if(plots == 1)
-            continue
-        end
-        if(plots == 4)
-            continue
-        end
-        if(plots == 5)
-            continue
-        end
+
         x = cell2mat(lsx{plots});
         y = cell2mat(lsy{plots});
         err = cell2mat(lserr{plots});
@@ -168,9 +173,38 @@ function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
                 'MarkerFaceColor', analyVar.COLORS(plots,:),...
                 'MarkerEdgeColor', 'none',...
                 'Color', analyVar.COLORS(plots,:));
+        title('Atom Numbers for Fluo and Abs')
+        xlabel('File Number')
+        ylabel('Number Atoms (Counted with Fast Fitting in LabView)')
     end
-
-    %for plots = 1:numberOfPlots
+    legend(labels, 'Location','northeastoutside')
+    hold off;
+    %labels = {"Coil ON 65 A, MOT OFF, ZM OFF", "Coil OFF, MOT OFF", "Coil ON 30 A, MOT OFF, ZM OFF", "Coil ON 15 A, MOT OFF, ZM OFF"};
+    % figure;
+    % hold on;
+    % for plots = 1:numberOfPlots
+    %     if(plots == 1)
+    %         continue
+    %     end
+    %     if(plots == 4)
+    %         continue
+    %     end
+    %     if(plots == 5)
+    %         continue
+    %     end
+    %     x = cell2mat(lsx{plots});
+    %     y = cell2mat(lsy{plots});
+    %     err = cell2mat(lserr{plots});
+    %     errorbar(x, y, err,...
+    %             'LineStyle','none',...
+    %             'Marker', analyVar.MARKERS2(1),...
+    %             'MarkerSize', analyVar.markerSize,...
+    %             'MarkerFaceColor', analyVar.COLORS(plots,:),...
+    %             'MarkerEdgeColor', 'none',...
+    %             'Color', analyVar.COLORS(plots,:));
+    % end
+    % 
+    % for plots = 1:numberOfPlots
     %    if(plots == 1)
     %        continue
     %    end
@@ -190,12 +224,12 @@ function funcOut = CustomCodeForPlotting(analyVar, indivDataset, avgDataset)
     %            'MarkerFaceColor', analyVar.COLORS(plots,:),...
     %            'MarkerEdgeColor', 'none',...
     %            'Color', analyVar.COLORS(plots,:));
-    %end
-    legend(labels)
-    title('SFI signal dependence vs time of experiment')
-    xlabel('Total time for MCS Data (ms)')
-    ylabel('Total MCS Counts')
-    hold off
+    % end
+    % legend(labels)
+    % title('SFI signal dependence vs time of experiment')
+    % xlabel('Total time for MCS Data (ms)')
+    % ylabel('Total MCS Counts')
+    % hold off
 
     % figure;
     % hold on;

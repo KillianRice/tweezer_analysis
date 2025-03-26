@@ -62,7 +62,7 @@ for i = 1:size(yData,1)
     
     %% Subtitle
     title(titleCell{i},'FontSize',analyVar.titleFontSize)
-
+    
     %% On last scan file insert legend enumerating all scans shown
     if iter(1) == iter(2) && i == size(yData,1)
         legend(num2str(legData(1:iter(1))),'Location','Best');

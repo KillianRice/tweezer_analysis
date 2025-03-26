@@ -68,9 +68,10 @@ end
     %% Define Physical Functions Used in Calculations
     % coeffs has elements coeffs = [initial_population, trap_lifetime]
     kB = 1.38E-23;%Boltzmanns constant
-    M86 = (86/84)*1.39E-25;%mass of strontium 84
-    M84 = 1.39E-25;%mass of strontium 84
-    specFit = @(coeffs,x) sqrt(coeffs(1).^2+(kB*coeffs(2)/M86)*x.^2);%input radii are in um so I..
+    %M88 = (88/84)*1.39E-25;  %mass of strontium 88
+    %M86 = (86/84)*1.39E-25;  %mass of strontium 86
+    %M84 = 1.39E-25;          %mass of strontium 84
+    specFit = @(coeffs,x) sqrt(coeffs(1).^2+(analyVar.kBoltz*coeffs(2)/analyVar.mass)*x.^2);%input radii are in um so I..
     %account for it by scaling the temperature
     %% Initialize loop variables
     [initialradiusX, initialradiusY, temperatureX, temperatureY, temperatureAve] = deal(zeros(length(indVarCell),3));
@@ -101,16 +102,16 @@ for iterVar = 1:length(indVarCell)
     % Outputs estimated value of each coefficient and the standard error (standard deviation) of
     % the estimate
     
-    initialradiusX(iterVar,1:2)  = double(specFitModelX.Coefficients('Initial Radius X',{'Estimate', 'SE'}));
+    initialradiusX(iterVar,1:2)  = table2array(specFitModelX.Coefficients('Initial Radius X',{'Estimate', 'SE'}));
     initialradiusX(iterVar,3)=initialradiusX(iterVar,2)/initialradiusX(iterVar,1);%uncertainty of parameter/ parameter
         
-    initialradiusY(iterVar,1:2)  = double(specFitModelY.Coefficients('Initial Radius Y',{'Estimate', 'SE'}));
+    initialradiusY(iterVar,1:2)  = table2array(specFitModelY.Coefficients('Initial Radius Y',{'Estimate', 'SE'}));
     initialradiusY(iterVar,3)=initialradiusY(iterVar,2)/initialradiusY(iterVar,1);%uncertainty of parameter/ parameter
     
-    temperatureX(iterVar,1:2) = double(specFitModelX.Coefficients('Temperature X',{'Estimate', 'SE'}));
+    temperatureX(iterVar,1:2) = table2array(specFitModelX.Coefficients('Temperature X',{'Estimate', 'SE'}));
     temperatureX(iterVar,3)=temperatureX(iterVar,2)/temperatureX(iterVar,1);
     
-    temperatureY(iterVar,1:2) = double(specFitModelY.Coefficients('Temperature Y',{'Estimate', 'SE'}));
+    temperatureY(iterVar,1:2) = table2array(specFitModelY.Coefficients('Temperature Y',{'Estimate', 'SE'}));
     temperatureY(iterVar,3)=temperatureY(iterVar,2)/temperatureY(iterVar,1);
 
     temperatureAve(iterVar,1) = (temperatureX(iterVar,1)+temperatureY(iterVar,1))/2;
@@ -132,7 +133,7 @@ for iterVar = 1:length(indVarCell)
 % %     
 % %     ciplot(lower,upper,indVar,'y');
     hold on
-    
+    %%%points for plotting spectra fits
     rawdataHan   = plot(indVar,[radiusX' radiusY']);
     fitdataHan   = plot(fitIndVar,[specFitModelX.predict(fitIndVar) specFitModelY.predict(fitIndVar)]);
     
@@ -146,7 +147,10 @@ for iterVar = 1:length(indVarCell)
     if iterVar == length(indVarCell);
         set(gcf,'Name','Spectra Fits');
     end
-    
+    %str={num2str(temperatureAve(iterVar,1))};
+    %annotation('textbox','interpreter','latex','String',str,'FitBoxToText','on')
+    str_title = strcat({'Avg. T = '}, num2str(temperatureAve(iterVar,1)*1e3),' mK');
+    title(str_title);
 %     %http://www.mathworks.com/help/curvefit/confidence-and-prediction-bounds.html
 %     Confi_Level=0.99;
 %     [exp_out,gof,output] = fit(x,y,'exp1');
@@ -161,12 +165,18 @@ for iterVar = 1:length(indVarCell)
 %     plot(x,p21,'m--')
 %     title('Nonsimultaneous functional bounds','Color','m')
 end
-
+dim = [.135 .81 .3 .3];
+str={'Fit Model: $$\sigma_t^2 = \sigma_i^2 + (\frac{k_B*T}{M})t^2$$'};
+annotation('textbox',dim,...
+    'interpreter','latex',...
+    'String',str,...
+    'FitBoxToText','on',...
+    'VerticalAlignment','bottom')
 %      initialradiusX
 %      initialradiusY
       temperatureX
       temperatureY
-     temperatureAve
+      temperatureAve
     
 
 %% Pack workspace into a structure for output

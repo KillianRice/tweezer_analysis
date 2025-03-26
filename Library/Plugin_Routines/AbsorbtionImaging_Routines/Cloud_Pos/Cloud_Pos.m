@@ -5,7 +5,8 @@ function posOut = Cloud_Pos(analyVar,indivDataset,avgDataset)
 avgAutoFlag = length(cell2mat(analyVar.posOccurUniqVar)) > length(analyVar.posOccurUniqVar) & ~any(analyVar.uniqScanList == 0);
 
 %% Flag whether to fit center positions as oscillations
-oscFitFlag  = 1;
+oscFitFlag  = 0;
+dropTimeFit = 1;
 oscAxis    = 'y'; %flag which axis is oscillating in space
 fitStatFlag = 1;
 
@@ -60,6 +61,16 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             title('Y - Axis'); fitCntr = cntrY;
         end  
         Spatail_Osc_Fit(indVar*1e-3,fitCntr');
+        set(gca,'FontSize',16)
+    end
+    if dropTimeFit
+        figure;
+        if strcmpi('x',oscAxis)
+            title('X - Axis'); fitCntr = cntrX;
+        else
+            title('Y - Axis'); fitCntr = cntrY;
+        end
+        DropTimeCalibration(indVar*1e-3,fitCntr');
         set(gca,'FontSize',16)
     end
     
@@ -125,6 +136,16 @@ if avgAutoFlag
                 title('Y - Axis'); fitCntr = avgCntrY;
             end
             Spatail_Osc_Fit(indVar*1e-3,fitCntr);
+            set(gca,'FontSize',16)
+        end
+        if dropTimeFit
+            figure;
+            if strcmpi('x',oscAxis)
+                title('X - Axis'); fitCntr = avgCntrX;
+            else
+                title('Y - Axis'); fitCntr = avgCntrY;
+            end
+            DropTimeCalibration(indVar*1e-3,fitCntr);
             set(gca,'FontSize',16)
         end
     end

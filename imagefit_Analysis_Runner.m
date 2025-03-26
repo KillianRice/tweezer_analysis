@@ -33,4 +33,4 @@ if analyVar.SavePlotData == 1
     PlotData = imagefit_ParamEval(analyVar,indivDataset);
 else
     imagefit_ParamEval(analyVar,indivDataset);
-end
+end 

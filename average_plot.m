@@ -7,11 +7,12 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     %%% by the flags in the master batch file.
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    %depVarField = 'numberAtom';
-    depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'numberAtom';
+    %depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
     
     %[xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
-    [xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);
+    %[xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);
+    [xdata_clean, ydata_clean] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     scanIDs = analyVar.uniqScanList;
     x = cell(length(scanIDs));
     y = cell(length(scanIDs));
@@ -97,9 +98,9 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
             'Color', analyVar.COLORS(id,:));
     end
     legend(num2str(scanIDs));
-    title('Trapping- Scanning Mot coil Off time - 60 1D2 Line');
-    xlabel('826 nm Synth with doubler ON [MHz]');
-    ylabel('Total MCS Counts');
+    title('Atom Number vs Time');
+    xlabel('Time (ms)');
+    ylabel('Atom Number');
     hold off
 
     %% PLot

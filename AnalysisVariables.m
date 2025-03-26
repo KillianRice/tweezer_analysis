@@ -105,12 +105,12 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'exponentialfit'...                 %58 exponential fit to field.
                     'threebodylossfit'...               %59 double exponential fit to a depVarfield
                     'average_plot_two_vars'...          %60 double exponential fit to a depVarfield.
-                    'CustomCodeForPLotting'...          %61 Custom Code.... Currently a version of averageplot for BMOT data
-                        };
+                    'CustomCodeForPLotting'...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
+                     };
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
-%plugInVec = [26, 58];
-plugInVec = [21,26];
+%plugInVec = [];
+plugInVec = [7];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -123,8 +123,9 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
-UseImages = 0;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
-UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
+UseImages = 1;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
+UseImages_Fluorescence = 0; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams for example.
+UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 
 % Common Plotting flags
@@ -144,7 +145,7 @@ roi2_maximum = 200;
 %%%% Atom cloud properties
 sampleType     = 'Thermal';  % Options are Thermal, BEC, or Lattice
 isotope        = 88; % Isotope mass used to select applicable models for fitting. Options are 84, 86, or 88 (87 not currently supported)
-detuning       = 0;  % s^-1, image beam detuning (as of 7/1/15)
+detuning       = 1.5;  % s^-1, image beam detuning (as of 7/1/15)
 pureSample     = 1;  % Flags whether BEC samples have a thermal fraction present or not (ignored for Thermal and Lattice samples)
 winToFit       = {'Central'}; % Specify which windows to fit, this generates the vector LatticeAxesFit
 binHorizontal  = 1;%binning done by camera when taking images
@@ -221,7 +222,7 @@ lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to ra
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -251,7 +252,7 @@ FCaxesPos       = [047, 035, 290, 190]*scalesize;
 
 condOffset    = 0.5;    % Add offset to condensate cross-section to separate from X cut
 ylimMeanTrimPercent = .25;  % Percentage used in meantrim for determining mean away from outliers for y limits
-yPlotLimBounds      = 1.5; % +/- this percentage around mean for y limits
+yPlotLimBounds      = 0.5; % +/- this percentage around mean for y limits
 COLORS  = [...
     1 .63 0; .85 0 .3; .37 0 .8; 0 .53 .75;  0 0 1; 0 .75 0; 0 .75 .75; .5 0 .5; .75 0 .75;0 0 1;...
     0 0 0;    1 0 .25; 0 .75 0; .5 0 .5; 0 0 1; 0 .75 0; 0 .75 .75; .5 0 .5; .75 0 .75;0 0 1;...
@@ -305,7 +306,7 @@ lambda          = 461e-9;                   % m, Sr 1S0->1P1 wavelength
 lambdaLat       = 532e-9;                   % m, Lattice wavelength
 BohrRadius      = 5.2917721092e-11;         % m, Bohr Radius in meter
 NaturalWidth    = 2*pi*30.5e6;              % s^-1, 1S0->1P1 FWHM
-CrossSection    = 3*lambda^2/(2*pi);        % m^2, atom-photon cross-section
+CrossSection    = 3*lambda^2/(2*pi);        % m^2, atom-photon cross-section, page 138 Foot Book.
 AbsCross        = CrossSection*1/(1 + (2*detuning/NaturalWidth)^2); %%% Pascal's PhD thesis (Eq. B.2)
 RecoilEnergy    = hbar^2/(2*mass)*(2*pi/lambdaLat)^2; % One photon recoil energy of the lattice wavelength
 Gravity         = 9.8;                      %m/s^2, acceleration due to gravity
@@ -350,7 +351,7 @@ plotMeanNum   = plotMeanParam; % Mean number averaged across similar scans
 plotTemp      = plotInstParam; % Temperature of each image
 plotMeanTemp  = plotMeanParam; % Mean temperature averaged across similar scans
 
-plotSize      = 0; % Cloud radius of each image
+plotSize      = 1; % Cloud radius of each image
 plotMeanSize  = 0; % Mean radius averaged across similar scans
 
 plotTrapFreq     = plotInstParam; % Geometric average of trap frequencies
@@ -484,7 +485,10 @@ latAxStr       = {'Z' 'X' 'Y'}; % Order of Lattice Axes in LatticeAxesFit
 switch CameraMag
     case 1
         CameraRes  = 15; %um
-        pixelsize  = binHorizontal*binVertical*14.12*10^(-6); %m/px
+        pixelOnCam = 6.7*10^(-6); %m
+        MagImgSystem = 0.75;
+        bin = binHorizontal;
+        pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
         
         % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
         % Found from image 6 of 2158 from 12.06.13 dataset with 11 ms drop with 1x objective

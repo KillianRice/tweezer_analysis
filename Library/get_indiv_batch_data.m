@@ -112,7 +112,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
     if analyVar.UseImages == 1
         % Retrieve indexing matricies that outline the different regions of the image
         [indivBatch.image_Index,indivBatch.roiWin_Index] = get_image_regions(analyVar,basenameNum); 
-
+  
         % Find number of elements inside the cloud window and around the cloud within the ROI window
         elCloud    = numel(nonzeros(indivBatch.image_Index ~= 0)); %% Enumerates all elements within the roiWinRadAtom (cloud and around)
         elNotCloud = numel(nonzeros(indivBatch.image_Index == 1)); %% Enumerates only elements not within the cloud
@@ -139,6 +139,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                 %   LabView and Matlab treat matrix coordinates differently.
                 %   (0,0) for LabView is lower left corner; for Matlab is upper left corner.
                 fullRawImageAtom = double(fread(sFID,analyVar.matrixSize,'*int16')); 
+                disp(size(fullRawImageAtom));
                 fclose(sFID);
 
                 % Separate Atoms into cloud part and around cloud part
