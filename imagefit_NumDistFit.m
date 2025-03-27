@@ -100,7 +100,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
 %%%%%%%-----------------------------------%%%%%%%%%%
                 % Tack on whether weighting was used or not (to avoid
                 % problems due to changing the option between fitting and plotting)
-                PCell = cellfun(@(x) [x' analyVar.weightPeak],PCell,'UniformOutput',0)
+                PCell = cellfun(@(x) [x' analyVar.weightPeak],PCell,'UniformOutput',0);
                     
                 % Write fit parameters to file
                 dlmwrite([analyVar.analyOutDir char(indivDataset{basenameNum}.fileBack(k)) ...

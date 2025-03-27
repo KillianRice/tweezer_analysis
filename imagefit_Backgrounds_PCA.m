@@ -98,10 +98,12 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         
         % Generate OD image using Beer's Law (subtract fitted background)
         if analyVar.UseImages_Fluorescence == 0
+            disp('Absorption Images')
             OD_Image_Single = (log(abs(cutImageBack)) - log(abs(cutImageAtom)));
         end
         if analyVar.UseImages_Fluorescence == 1
-            OD_Image_Single = (-log(abs(cutImageBack)) + log(abs(cutImageAtom)));
+            disp('Fluorescence Images: Fitting Raw intensities')
+            OD_Image_Single = (abs(cutImageAtom)); 
         end
         
         %%% Save OD

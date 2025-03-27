@@ -124,7 +124,7 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
 UseImages = 1;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
-UseImages_Fluorescence = 0; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams for example.
+UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
 UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 
@@ -148,8 +148,8 @@ isotope        = 88; % Isotope mass used to select applicable models for fitting
 detuning       = 1.5;  % s^-1, image beam detuning (as of 7/1/15)
 pureSample     = 1;  % Flags whether BEC samples have a thermal fraction present or not (ignored for Thermal and Lattice samples)
 winToFit       = {'Central'}; % Specify which windows to fit, this generates the vector LatticeAxesFit
-binHorizontal  = 1;%binning done by camera when taking images
-binVertical    = 1;
+binHorizontal  = 2;%binning done by camera when taking images
+binVertical    = 2;
 matrixSize     = [1280/binVertical 1024/binHorizontal]; % Matrix size of camera output: Set this to be the same as PixelFly dimensions.
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
@@ -209,8 +209,14 @@ gaussFiltSig    = 2; % Width of gaussian filter applied when finding initial gue
 ampBimodalGuess = 0.13; % When fitting bimodal feature, initial guess of thermal amplitude is this percentage of BEC peak (get_fit_params)
 smoothFilt      = @(x,y) medfilt2(x,y); % Smooth noise on image to evaluate fit (create_plot_fitEval)
 smoothFiltMat   = 2*[1 1];                % Defines the moving box that the smoothing filter effects
-% Bounds on fit parameters 
-lsqAmpBnd       = {0 10}; % Amplitude bounds 
+% Bounds on fit parameters
+if UseImages_Fluorescence == 0
+    lsqAmpBnd       = {0 10}; % Amplitude bounds
+end
+if UseImages_Fluorescence == 1
+    lsqAmpBnd       = {0 Inf}; % Amplitude bounds for fluorescence image can be higher as raw images are analyzed.
+end
+
 lsqSigBnd       = {0 'analyVar.cloudWinRadAtom'}; % Width bounds - upper bound is window radius (entire cloud must be in view)
 lsqCntBnd       = {0 '2*analyVar.cloudWinRadAtom + 1'}; % Peak position - upper bound is window radius
 lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to range from 0 to Inf
@@ -222,7 +228,7 @@ lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to ra
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
