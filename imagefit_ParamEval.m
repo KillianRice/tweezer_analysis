@@ -78,6 +78,7 @@ if analyVar.UseImages
                 bestBEC1DLim  = [-0.1 max(max(cell2mat(get(fitBEC1DAxH{basenameNum},'YLim'))))];
                 set(fitBEC1DAxH{basenameNum},'YLim',bestBEC1DLim)     % apply y range to fit1D
             end
+            
         end
     end
 

@@ -96,6 +96,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         set(0,'CurrentFigure',figStruct.fig2DFit + basenameNum)
         fit2DAxH{basenameNum}(k) = subplot(indivDataset{basenameNum}.SubPlotRows,indivDataset{basenameNum}.SubPlotCols,k);
         pcolor((roiDistImage)); shading flat;
+        colorbar;
         %%% Plot axis details
         title(strcat(num2str(indivDataset{basenameNum}.imagevcoAtom(k)),[' ' analyVar.xDataUnit])); hold on; grid off;
         if k == indivDataset{basenameNum}.CounterAtom;
@@ -107,7 +108,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
 %%%%%%%-----------------------------------%%%%%%%%%%   
         set(0,'CurrentFigure',figStruct.figRes + basenameNum)
         resAxH{basenameNum}(k) = subplot(indivDataset{basenameNum}.SubPlotRows,indivDataset{basenameNum}.SubPlotCols,k);
-        pcolor((indivDataset{basenameNum}.All_OD_Image{k} - roiDistImage)); shading flat;
+        pcolor((indivDataset{basenameNum}.All_OD_Image{k} - roiDistImage)); shading flat; colorbar;
         %%% Plot axis details
         title(strcat(num2str(indivDataset{basenameNum}.imagevcoAtom(k)),[' ' analyVar.xDataUnit])); hold on; grid off;
         if k == indivDataset{basenameNum}.CounterAtom;

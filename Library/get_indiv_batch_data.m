@@ -132,14 +132,17 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             for ii = 1:indivBatch.CounterAtom
                 s = [analyVar.dataDir char(indivBatch.fileAtom(ii)) analyVar.dataAtom]; 
                 sFID = fopen(s,'rb','ieee-be');
-                disp(s)
+                %disp(s)   % use this to look at the bny files being opened
+                %            in the batch
                 %Read in binary file created in LabView
                 %   LabView saves binary in "big endian" ('be') format: most significant bit in
                 %   lowest memory address. Matlab needs this info to import binaryfile correctly.
                 %   LabView and Matlab treat matrix coordinates differently.
                 %   (0,0) for LabView is lower left corner; for Matlab is upper left corner.
                 fullRawImageAtom = double(fread(sFID,analyVar.matrixSize,'*int16')); 
-                disp(size(fullRawImageAtom));
+                if ii==1
+                    disp(['Camera Pixel mode: ',num2str(size(fullRawImageAtom))]);
+                end
                 fclose(sFID);
 
                 % Separate Atoms into cloud part and around cloud part

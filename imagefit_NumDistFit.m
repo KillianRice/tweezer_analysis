@@ -109,7 +109,6 @@ for basenameNum = 1:analyVar.numBasenamesAtom
     end % end loop through each dataset
 end     % end loop through master batch file
 
-
 %% Wrap Up
 fclose('all'); % Close any file handles which may be open
 fprintf('The cloud fitting is completed.\n\n')

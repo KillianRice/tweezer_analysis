@@ -28,6 +28,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             %% Plot Evolution
             evolAxH{basenameNum}(k) = subplot(indivDataset{basenameNum}.SubPlotRows,indivDataset{basenameNum}.SubPlotCols,k);
             pcolor(indivDataset{basenameNum}.All_OD_Image{k});
+            colorbar;
 			shading flat;
 			axis equal tight;
 			
