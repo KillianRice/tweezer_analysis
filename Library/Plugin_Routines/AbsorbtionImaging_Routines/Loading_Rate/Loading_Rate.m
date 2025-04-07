@@ -49,7 +49,7 @@ end
     %% Define Physical Functions Used in Calculations
     % coeffs has elements coeffs = [initial_population, trap_lifetime]
     
-    specFit = @(coeffs,x) coeffs(1)*coeffs(2)*(1-exp(-x/coeffs(2)));
+    specFit = @(coeffs,x) coeffs(1)*coeffs(2)*(1-exp(-(x+coeffs(3))/coeffs(2)));
     %% Initialize loop variables
     [loading_rate, one_body_coeff saturationNum] = deal(zeros(length(indVarCell),3));
     %% Define Plot parameters
@@ -67,12 +67,13 @@ for iterVar = 1:length(indVarCell)
     initOneBodyLoss = indVar(end);% Guess that the lifetime is about the length of the last data point in time,
     %this assume with took data spaning a range comparable to the lifetime
     initLoadRate = totNum(end)/initOneBodyLoss; % Guess that the initial population is the first value of the data set,...
+    initTimeOffset = 10e-3;
     %which is valid if the first point is taken with a small hold time in
     %the magnetic trap
     
     % Fitting routine
-    specFitModel = NonLinearModel.fit(indVar',totNum,specFit,[initLoadRate initOneBodyLoss],...
-        'CoefficientNames',{'Loading Rate','One Body Loss Coefficient'});
+    specFitModel = NonLinearModel.fit(indVar',totNum,specFit,[initLoadRate initOneBodyLoss,initTimeOffset],...
+        'CoefficientNames',{'Loading Rate','One Body Loss Coefficient','TimeOffset'});
 
     % Calculate output quantities
     % Outputs estimated value of each coefficient and the standard error (standard deviation) of
@@ -86,6 +87,8 @@ for iterVar = 1:length(indVarCell)
     saturationNum(iterVar,2) = saturationNum(iterVar,1)*sqrt((loading_rate(iterVar,2)/loading_rate(iterVar,1))^2+(one_body_coeff(iterVar,2)/one_body_coeff(iterVar,1))^2);
     saturationNum(iterVar,3)=saturationNum(iterVar,2)/saturationNum(iterVar,1);
 
+    timeoffset_coeff(iterVar,1:2) = table2array(specFitModel.Coefficients('TimeOffset',{'Estimate', 'SE'}));
+
     % Plot number vs. fit for inspection
     
     figure(specFitFig); subplot(subPlotRows,subPlotCols,iterVar);
@@ -97,9 +100,13 @@ for iterVar = 1:length(indVarCell)
     lower_Coeff_life=one_body_coeff(iterVar,1)-one_body_coeff(iterVar,2);
     upper_Coeff_life=one_body_coeff(iterVar,1)+one_body_coeff(iterVar,2);
     
-    lower=specFit([lower_Coeff_amp,lower_Coeff_life],indVar);
-    upper=specFit([upper_Coeff_amp,upper_Coeff_life],indVar);
+    timeoffset_lower = timeoffset_coeff(iterVar,1)-timeoffset_coeff(iterVar,2);
+    timeoffset_upper =timeoffset_coeff(iterVar,1)+timeoffset_coeff(iterVar,2);
+
+    lower=specFit([lower_Coeff_amp,lower_Coeff_life,timeoffset_lower],indVar);
+    upper=specFit([upper_Coeff_amp,upper_Coeff_life,timeoffset_upper],indVar);
     
+     
     ciplot(lower,upper,indVar,'y');
     hold on
     

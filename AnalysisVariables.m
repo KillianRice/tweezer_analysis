@@ -106,11 +106,12 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'threebodylossfit'...               %59 double exponential fit to a depVarfield
                     'average_plot_two_vars'...          %60 double exponential fit to a depVarfield.
                     'CustomCodeForPLotting'...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
+                    'DoubleExponential_v2'...           %62 Double Exponential version 2
                      };
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
 %plugInVec = [];
-plugInVec = [7];
+plugInVec = [62];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -145,11 +146,11 @@ roi2_maximum = 200;
 %%%% Atom cloud properties
 sampleType     = 'Thermal';  % Options are Thermal, BEC, or Lattice
 isotope        = 88; % Isotope mass used to select applicable models for fitting. Options are 84, 86, or 88 (87 not currently supported)
-detuning       = 1.5;  % s^-1, image beam detuning (as of 7/1/15)
+detuning       = 1;  % s^-1, image beam detuning (as of 7/1/15)
 pureSample     = 1;  % Flags whether BEC samples have a thermal fraction present or not (ignored for Thermal and Lattice samples)
 winToFit       = {'Central'}; % Specify which windows to fit, this generates the vector LatticeAxesFit
-binHorizontal  = 1;%binning done by camera when taking images
-binVertical    = 1;
+binHorizontal  = 2;%binning done by camera when taking images
+binVertical    = 2;
 matrixSize     = [1280/binVertical 1024/binHorizontal]; % Matrix size of camera output: Set this to be the same as PixelFly dimensions.
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
@@ -228,7 +229,7 @@ lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to ra
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -242,7 +243,7 @@ plotCounts_SR400 = 0;%photon counter
 
 
 % Plotting presentation
-TimeOrDetune  = 'Frequency'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
+TimeOrDetune  = 'Time'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
 
 titleFontSize = 18;
 axisfontsize  = 14;
@@ -380,6 +381,7 @@ figNum.condFrac = 2200;  figNum.meanFrac = 12200;
 figNum.atomSize = 3000;  figNum.meanSize = 13000;
 figNum.atomTemp = 4000;  figNum.meanTemp = 14000;
 figNum.trapFreq = 5000;  figNum.meanFreq = 15000;
+figNum.COM = 6000;
 figNum.picoCountsA = 16000; figNum.picoCountsB = 17000;
 figNum.MCSCounts = 18000; figNum.MCSTraces = 19000;
 
@@ -492,7 +494,7 @@ switch CameraMag
     case 1
         CameraRes  = 15; %um
         pixelOnCam = 6.7*10^(-6); %m
-        MagImgSystem = 0.75;
+        MagImgSystem = 1;
         bin = binHorizontal;
         pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
         

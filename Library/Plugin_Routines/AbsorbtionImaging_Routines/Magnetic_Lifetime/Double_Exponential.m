@@ -93,9 +93,9 @@ for iterVar = 1:length(indVarCell)
     % Calculate output quantities
     % Outputs estimated value of each coefficient and the standard error (standard deviation) of
     % the estimate
-    amplitude(iterVar,:)  = double(specFitModel.Coefficients('Initial Atom Number',{'Estimate', 'SE'}));
-    lifetime1(iterVar,:) = double(specFitModel.Coefficients('Trap Lifetime 1',{'Estimate', 'SE'}));
-    lifetime2(iterVar,:) = double(specFitModel.Coefficients('Trap Lifetime 2',{'Estimate', 'SE'})); 
+    amplitude(iterVar,:)  = table2array(specFitModel.Coefficients('Initial Atom Number',{'Estimate', 'SE'}));
+    lifetime1(iterVar,:) = table2array(specFitModel.Coefficients('Trap Lifetime 1',{'Estimate', 'SE'}));
+    lifetime2(iterVar,:) = table2array(specFitModel.Coefficients('Trap Lifetime 2',{'Estimate', 'SE'})); 
 %     fullWidth(iterVar,1)  = fullwidthFunc(double(specFitModel.Coefficients('Halfwidth','Estimate')));
 %     fullWidth(iterVar,2)  = fullwidthFunc(double(specFitModel.Coefficients('Halfwidth','SE')));
     

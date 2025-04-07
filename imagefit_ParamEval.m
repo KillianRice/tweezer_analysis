@@ -94,6 +94,9 @@ if analyVar.UseImages
     indivDataset = param_ext_CloudRadius(analyVar,indivDataset);
     % CLoud Center Pos -X and Y to indivDataset
     indivDataset = param_ext_Cloudcenter(analyVar,indivDataset);
+    % CLoud COM Pos -X and Y to indivDataset
+    indivDataset = param_ext_CenterOfMass_Image(analyVar,indivDataset);
+    create_plot_COM(analyVar,indivDataset);
     % Plotting radius of each batch
     if analyVar.plotSize; create_plot_CloudRadius(analyVar,indivDataset); end
 
