@@ -110,8 +110,8 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                      };
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
-%plugInVec = [];
-plugInVec = [62];
+plugInVec = [];
+%plugInVec = [26];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -229,7 +229,7 @@ lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to ra
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters

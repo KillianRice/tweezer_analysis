@@ -15,7 +15,7 @@ function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
     % field in indivDataset. Typically the indVarField is imagevcoAtom, the
     % variable that was scanned during the experiment.
     
-    form = @(coeffs,x) coeffs(1)*(exp(-x/coeffs(2)) + exp(-x/coeffs(3)))+coeffs(4); % A * Exp[-x/tau1-x/tau2] + C 
+    form = @(coeffs,x) coeffs(1)*(exp(-x/coeffs(2)) + exp(-x/coeffs(3)))/2+coeffs(4); % A * Exp[-x/tau1-x/tau2] + C 
     
     indVarField = 'imagevcoAtom'; % independent variable
     %depVarField = 'winTotNum'; % dependent variable
@@ -34,8 +34,8 @@ function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
         % can also return a constant vector with length equal to the number
         % of parameters in the fit function
         initialguess(1) = max(ydata);
-        initialguess(2) = (max(xdata)-min(xdata));
-        initialguess(3) = (max(xdata)-min(xdata))/10;
+        initialguess(2) = 20; %(max(xdata)-min(xdata));
+        initialguess(3) = 300; %(max(xdata)-min(xdata))/10;
         initialguess(4) = min(ydata);
     end
 
