@@ -107,11 +107,12 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'average_plot_two_vars'...          %60 double exponential fit to a depVarfield.
                     'CustomCodeForPLotting'...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
                     'DoubleExponential_v2'...           %62 Double Exponential version 2
+                    'TOF_Temperature_AvgDatasets'...    %63 TOF fits for individual scans and avg scans
                      };
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
-plugInVec = [];
-%plugInVec = [26];
+plugInVec = [63];
+%plugInVec = [56];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -125,7 +126,7 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
 UseImages = 1;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
-UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
+UseImages_Fluorescence = 0; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
 UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 
@@ -525,7 +526,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_searchingforrydberg';
+analyPrefix     = '_BlueMOT_Temperature_Studies';
 analyOutputName = 'Analysis';
 
 %Two assumptions are made here,

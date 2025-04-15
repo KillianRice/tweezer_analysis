@@ -19,6 +19,10 @@ function exp_out=TOF_Temperature(analyVar,indivDataset,avgDataset)
 %
 format shortEng %format numbers outputted
 
+%%% plotting avg datasets
+
+
+
 for basenameNum = 1:analyVar.numBasenamesAtom
     % Reference variables in structure by shorter names for convenience
     % (will not create copy in memory as long as the vectors are not modified)

@@ -18,8 +18,8 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     form = @(coeffs, x) coeffs(1)*exp(-x/coeffs(2)) + coeffs(3); % A * Exp[-t/tau] + C 
     
     indVarField = 'imagevcoAtom'; % independent variable
-    %depVarField = 'winTotNum'; % dependent variable
-    depVarField = 'numberAtom'; % dependent variable
+    depVarField = 'winTotNum'; % dependent variable
+    %depVarField = 'numberAtom'; % dependent variable
     
     %% initial guess code
     % fill in this function to estimate the values of the fit parameters,

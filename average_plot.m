@@ -7,7 +7,7 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     %%% by the flags in the master batch file.
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField = 'numberAtom';
+    depVarField = 'winTotNum';
     %depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
     
     %[xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
