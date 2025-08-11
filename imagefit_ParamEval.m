@@ -90,6 +90,11 @@ if analyVar.UseImages
     % Plotting number in each batch
     if analyVar.plotNum; create_plot_AtomNum(analyVar,indivDataset); end
 
+    %%(NEW 2025) Cloud Amplitude - Find amplitude in each window of each image
+    indivDataset = param_ext_PixelAmp(analyVar,indivDataset);
+    % Plotting amplitude in each batch
+    if analyVar.plotAmp; create_plot_PixelAmp(analyVar,indivDataset); end
+
     % Cloud Size - X & Y saved to indivDataset
     indivDataset = param_ext_CloudRadius(analyVar,indivDataset);
     % CLoud Center Pos -X and Y to indivDataset
