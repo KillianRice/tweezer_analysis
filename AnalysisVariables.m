@@ -108,11 +108,12 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'CustomCodeForPLotting'...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
                     'DoubleExponential_v2'...           %62 Double Exponential version 2
                     'TOF_Temperature_AvgDatasets'...    %63 TOF fits for individual scans and avg scans
+                    'plot_averaged_variable'            %64 Plot Of averaged variable based on scan ID
                      };
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
-plugInVec = [63];
-%plugInVec = [56];
+%plugInVec = [57,21,26];
+plugInVec = [58];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -126,9 +127,10 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
 UseImages = 1;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
-UseImages_Fluorescence = 0; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
+UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
 UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
+CameraType = 0; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 
 % Common Plotting flags
     lcl_logicFitLine = zeros(1,length(lcl_validFitLine)); 
@@ -147,12 +149,20 @@ roi2_maximum = 200;
 %%%% Atom cloud properties
 sampleType     = 'Thermal';  % Options are Thermal, BEC, or Lattice
 isotope        = 88; % Isotope mass used to select applicable models for fitting. Options are 84, 86, or 88 (87 not currently supported)
-detuning       = 1;  % s^-1, image beam detuning (as of 7/1/15)
+detuning       = 0;  % s^-1, image beam detuning (as of 7/1/15)
 pureSample     = 1;  % Flags whether BEC samples have a thermal fraction present or not (ignored for Thermal and Lattice samples)
 winToFit       = {'Central'}; % Specify which windows to fit, this generates the vector LatticeAxesFit
-binHorizontal  = 2;%binning done by camera when taking images
-binVertical    = 2;
-matrixSize     = [1280/binVertical 1024/binHorizontal]; % Matrix size of camera output: Set this to be the same as PixelFly dimensions.
+
+if CameraType == 0
+    binHorizontal  = 2;%binning done by camera when taking images
+    binVertical    = 2;
+    matrixSize     = [1280/binVertical 1024/binHorizontal]; % Matrix size of camera output: Set this to be the same as PixelFly dimensions.
+end
+if CameraType == 1
+    binHorizontal  = 1;%binning done by camera when taking images
+    binVertical    = 1;
+    matrixSize     = [600/binVertical 600/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
+end 
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
 TempXY         = 0; % set to 1 if Temp will be the geometric mean of TempX and TempY, otherwise Temp will equal TempX
@@ -356,16 +366,18 @@ plotRawImage  = 0;             % Processed raw images (trimmed and binned) - nee
 plotNum       = plotInstParam; % Number in each image
 plotMeanNum   = plotMeanParam; % Mean number averaged across similar scans
 
-plotTemp      = plotInstParam; % Temperature of each image
-plotMeanTemp  = plotMeanParam; % Mean temperature averaged across similar scans
+plotTemp      = 0; %plotInstParam; %Temperature of each image
+plotMeanTemp  = 0; %plotMeanParam; %Mean temperature averaged across similar scans
 
-plotSize      = 1; % Cloud radius of each image
+plotSize      = 0; % Cloud radius of each image
 plotMeanSize  = 0; % Mean radius averaged across similar scans
 
 plotTrapFreq     = plotInstParam; % Geometric average of trap frequencies
 plotMeanTrapFreq = plotMeanParam; % Mean geometric average of trap frequencies
 
 plotPhaseSpace = plotInstParam; %Phase Space Density of each point given ODT evaporation parameters
+
+plotAmp      = 0; % Cloud amplitude of each image (2025)
 
 % Figure assignment
 % Assign base figure number used in the imagefit routine (if assigning figures for lineshape fitting plots please consult
@@ -385,6 +397,7 @@ figNum.trapFreq = 5000;  figNum.meanFreq = 15000;
 figNum.COM = 6000;
 figNum.picoCountsA = 16000; figNum.picoCountsB = 17000;
 figNum.MCSCounts = 18000; figNum.MCSTraces = 19000;
+figNum.Amp = 20000;
 
 %% LABVIEW BATCHFILE VARIABLES
 %%-----------------------------------------------------------------------%%
@@ -492,21 +505,39 @@ latAxStr       = {'Z' 'X' 'Y'}; % Order of Lattice Axes in LatticeAxesFit
 %%-----------------------------------------------------------------------%%
 % Camera properties depend on resolution (Mi Yan's PhD thesis - 12.10.13)
 switch CameraMag
-    case 1
-        CameraRes  = 15; %um
-        pixelOnCam = 6.7*10^(-6); %m
-        MagImgSystem = 1;
-        bin = binHorizontal;
-        pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
-        
-        % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
-        % Found from image 6 of 2158 from 12.06.13 dataset with 11 ms drop with 1x objective
-        %LatFreeExpCalib = [0,20,-20,30,-30,31,-31,]./11;
-        
-        % Bragg Spectroscopy calibration - Added 2014.07.29
-        % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
-        % Found from image 27 of 1500 from 07.29.14 dataset with 22 ms drop with 1x objective
-        LatFreeExpCalib = [0,0,0,38,-38,0,0,]./22;
+    case 1      
+        if CameraType == 0      %condition for PixelFly camera
+            CameraRes  = 15; %um
+            pixelOnCam = 6.7*10^(-6); %m
+            MagImgSystem = 1;
+            bin = binHorizontal;
+            pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
+            
+            % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
+            % Found from image 6 of 2158 from 12.06.13 dataset with 11 ms drop with 1x objective
+            %LatFreeExpCalib = [0,20,-20,30,-30,31,-31,]./11;
+            
+            % Bragg Spectroscopy calibration - Added 2014.07.29
+            % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
+            % Found from image 27 of 1500 from 07.29.14 dataset with 22 ms drop with 1x objective
+            LatFreeExpCalib = [0,0,0,38,-38,0,0,]./22;
+        end 
+        if CameraType == 1  %condition for Zyla 4.2 camera
+            CameraRes  = 15; %um
+            pixelOnCam = 6.5*10^(-6); %m
+            MagImgSystem = 1.6;
+            bin = binHorizontal;
+            pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
+            
+            % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
+            % Found from image 6 of 2158 from 12.06.13 dataset with 11 ms drop with 1x objective
+            %LatFreeExpCalib = [0,20,-20,30,-30,31,-31,]./11;
+            
+            % Bragg Spectroscopy calibration - Added 2014.07.29
+            % Calibration of diffraction peaks after free expansion, follows form of [Origin, +Z, -Z, +X, -X, +Y, -Y]
+            % Found from image 27 of 1500 from 07.29.14 dataset with 22 ms drop with 1x objective
+            LatFreeExpCalib = [0,0,0,38,-38,0,0,]./22;
+        end            
     case 4
         error('Rydberg Experiment has not been calibrated for new magnification')
         CameraRes  = 0; 
@@ -526,7 +557,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_BlueMOT_Temperature_Studies';
+analyPrefix     = '_TowardsRedMOT';
 analyOutputName = 'Analysis';
 
 %Two assumptions are made here,
