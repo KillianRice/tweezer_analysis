@@ -82,7 +82,7 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'avg_num_and_temp',...              %35 plot histograms of average atom number and temp
                     'MCS_Integrated_SFI_roi_Spectrum',...%36 select roi in for Integrated SFI and plot vs Independent variable
                     'average_plot_sfi_roi'...           %37 plots averages of the two roi's selected
-                    'sfi_gaussian',...                  %38
+                    'sfi_gaussian',...                  %38 Gaussian fit
                     'trap_effective_volume',...         %39
                     'split_fermion_rydberg_line_pi_pi',...  %40
                     'SFI_fit_and_exctract',...          %41
@@ -525,7 +525,7 @@ switch CameraMag
         if CameraType == 1  %condition for Zyla 4.2 camera
             CameraRes  = 15; %um
             pixelOnCam = 6.5*10^(-6); %m
-            MagImgSystem = 1.6;
+            MagImgSystem = 1.6;  %% 25 mm in-vacuo & 40 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
             bin = binHorizontal;
             pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
             
@@ -557,7 +557,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_TowardsRedMOT';
+analyPrefix     = '_RydbergSpectroscopy';
 analyOutputName = 'Analysis';
 
 %Two assumptions are made here,

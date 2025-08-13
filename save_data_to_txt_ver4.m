@@ -12,7 +12,7 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset, avgDataset)
     use_mcs = analyVar.UseMCS;
     
     indVarField = {'imagevcoAtom'};
-    depVarField = {'sfiIntegral', 'wavemeterAtom', 'wavemeterBack'};
+    depVarField = {'sfiIntegral', 'wavemeterAtom', 'wavemeterBack'};%% add the indivDataset variables you want to extract to txt file in the dataframe.
     %depVarField = {'wavemeterAtom', 'wavemeterBack'};
     
     %{
