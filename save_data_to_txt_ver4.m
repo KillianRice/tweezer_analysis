@@ -1,4 +1,4 @@
-function [files] = save_data_to_txt_ver4(analyVar, indivDataset, avgDataset)
+function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
 % 2019/02/07 - work-in-progress towards a more versatile function for
 %              writing output data. 
     
@@ -7,12 +7,14 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset, avgDataset)
     
     % Options
     use_dac = 0;
-    use_labview = 1;
-    use_images = analyVar.UseImages;
+    use_labview = 0;
+    use_images = 0; %analyVar.UseImages;
     use_mcs = analyVar.UseMCS;
+
+    use_COM = 1;
     
     indVarField = {'imagevcoAtom'};
-    depVarField = {'sfiIntegral', 'wavemeterAtom', 'wavemeterBack'};%% add the indivDataset variables you want to extract to txt file in the dataframe.
+    depVarField = {'fileAtom'};
     %depVarField = {'wavemeterAtom', 'wavemeterBack'};
     
     %{
@@ -65,6 +67,11 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset, avgDataset)
         'atomTempX',...
         'atomTempY'
         };
+
+    COM_header = {
+        'cntrX',...
+        'cntrX'
+        };
     
     % Loop over individual scans
     for scan_idx = 1:analyVar.numBasenamesAtom
@@ -96,6 +103,12 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset, avgDataset)
                 out = [out, table(transpose(indivDataset{scan_idx}.(image_header{j})), 'VariableNames', image_header(j))];
             end
         end
+
+        if use_COM
+            for k = 1: length(COM_header)
+               out = [out, table(transpose(indivDataset{scan_idx}.All_fitParams{k}{1}.yCntr, indivDataset{scan_idx}.All_fitParams{k}{1}.xCntr), 'VariableNames', COM_header(j))];
+            end
+        end 
         
         % Output file diretory
         output_file_name = strcat(analyVar.basenamevectorAtom{scan_idx},'_out.csv');
