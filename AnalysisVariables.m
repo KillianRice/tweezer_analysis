@@ -113,7 +113,7 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
 %plugInVec = [57,21,26];
-plugInVec = [58];
+plugInVec = [];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -126,11 +126,12 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
-UseImages = 1;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
+UseImages = 0;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
 UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
-UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
+UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 CameraType = 0; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
+DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
 % Common Plotting flags
     lcl_logicFitLine = zeros(1,length(lcl_validFitLine)); 
