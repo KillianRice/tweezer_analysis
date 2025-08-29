@@ -8,7 +8,7 @@ function [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset
     %% Extracting x,y data for each BasenamesAtom
     for i = 1:analyVar.numBasenamesAtom
         
-        xdata{i} = indivDataset{i}.(indVarField);
+        xdata{i} = indivDataset{i}.(indVarField) + analyVar.DropTimeOffset;
         ydata{i} = indivDataset{i}.(depVarField);
 
     end
