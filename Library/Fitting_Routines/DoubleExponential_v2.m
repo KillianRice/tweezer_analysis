@@ -1,6 +1,6 @@
 function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
     
-    %% Fit_Template - SKK 2025.04.07
+    %% Fit_Template - 
     % Updated on 2025.02.04 by SKK to modify the form to A * Exp[-t/tau] + C 
     
     % This function calls the base_fit script that does all of the fitting
@@ -15,11 +15,17 @@ function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
     % field in indivDataset. Typically the indVarField is imagevcoAtom, the
     % variable that was scanned during the experiment.
     
-    form = @(coeffs,x) coeffs(1)*(exp(-x/coeffs(2)) + exp(-x/coeffs(3)))/2+coeffs(4); % A * Exp[-x/tau1-x/tau2] + C 
-    
+    %form = @(coeffs,x) coeffs(1)*(exp(-x/coeffs(2)) + exp(-x/coeffs(3)))/2+coeffs(4); % A * Exp[-x/tau1-x/tau2] + C 
+    %form = @(coeffs,x) coeffs(1)*(exp(-x/coeffs(2)) + exp(-x/coeffs(3)))/2;
+
+    % form for number of atoms if the trap is experiencing both collisional
+    % (density dependent) loss from the trap and loss due to decay - Sarah
+    % Nagel's thesis page 47
+    form = @(coeffs,x) coeffs(1).*(exp(-(x-coeffs(4))./coeffs(2)) ./ (1 + ((coeffs(1).*coeffs(3) .* coeffs(2)) .* (1 - exp(-x./coeffs(2))))));
+
     indVarField = 'imagevcoAtom'; % independent variable
-    %depVarField = 'winTotNum'; % dependent variable
-    depVarField = 'numberAtom'; % dependent variable
+    depVarField = 'winTotNum'; % dependent variable
+    %depVarField = 'numberAtom'; % dependent variable
     
     %% initial guess code
     % fill in this function to estimate the values of the fit parameters,
@@ -34,9 +40,9 @@ function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
         % can also return a constant vector with length equal to the number
         % of parameters in the fit function
         initialguess(1) = max(ydata);
-        initialguess(2) = 20; %(max(xdata)-min(xdata));
-        initialguess(3) = 300; %(max(xdata)-min(xdata))/10;
-        initialguess(4) = min(ydata);
+        initialguess(2) = (max(xdata)-min(xdata));% 40; %
+        initialguess(3) = 10^(-9); % this is 10^(-9) for Flu. images typically. For absorption real atom number data this will be 10^(-11) - S. Nagel thesis.
+        initialguess(4) = 2;  % offset in time 2ms.
     end
 
 
@@ -73,7 +79,10 @@ function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
         'PlotIndivFits', false,...
         'PlotAll', false,...
         'PlotAllAvgs', true,...
-        'PlotInitialGuess', false,...
+        'PlotInitialGuess', true,...
+        'CoeffNames', {{'N_0 ', '\tau ', 'C '}},...
+        'CoeffUnits', {{'','ms',''}},...
+        'AnnotateFunction', @MyAnnotate,...
         'Statistics', 'gaussian');
     
     base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)
@@ -82,5 +91,22 @@ function funcOut = DoubleExponential_v2(analyVar, indivDataset, avgDataset)
     funcOut.indivDataset = indivDataset;
     funcOut.avgDataset = avgDataset;
 
+end
+
+function an = MyAnnotate(coeffs, err, coeffNames, coeffUnits)
+    dim = [.2 .5 .3 .3];
+    coeffs(1) = coeffs(1);
+    coeffs(2) = coeffs(2); 
+    err(2) = err(2);  
+    strs = cell(3,1);
+    for i = 1:3
+        if i <= numel(coeffs)
+            strs{i} = [coeffNames{i}, ': ', unc_string(coeffs(i),err(i)),...
+                ' ', coeffUnits{i},newline];
+            strs{i};
+        end
+    end
+    an = annotation('textbox', dim, 'String', strjoin(strs),...
+        'FitBoxToText', 'on', 'BackgroundColor', 'white');
 end
 
