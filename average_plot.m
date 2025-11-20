@@ -7,7 +7,8 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     %%% by the flags in the master batch file.
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField = 'winTotNum';
+    %depVarField = 'cldRadX';
+    depVarField = 'numberAtom';
     %depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
     
     %[xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
@@ -82,9 +83,9 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
         AvgSig_err(id) = std(y{id}); % use this to std over the independent variable and get a scalar for each scanID
     end
     
-    avgDataset.(depVarField) = y;
-    avgDataset.(strcat(depVarField,'_unc')) = yerr;
-    avgDataset.(strcat(depVarField,'_x')) = x;
+    %avgDataset.(depVarField) = y;
+    %avgDataset.(strcat(depVarField,'_unc')) = yerr;
+    %avgDataset.(strcat(depVarField,'_x')) = x;
     
     figure;
     hold on;
@@ -98,9 +99,9 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
             'Color', analyVar.COLORS(id,:));
     end
     legend(num2str(scanIDs));
-    title('Atom Number vs Time');
-    xlabel('Time (ms)');
-    ylabel('Atom Number');
+    title('3P1 Population for Trim Fiels X: V, Y: V, Z: V');
+    xlabel('rMOT Final Freq (MHz)');
+    ylabel('Total Number Avg. Fluo');
     hold off
 
     %% PLot
