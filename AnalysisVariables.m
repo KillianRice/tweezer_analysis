@@ -98,22 +98,30 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'bec_decay_lifetime_roi',...        %51
                     'voigt',...                         %52
                     'lossspectrafit',...                %53
-                    'rabi_oscillation_fit'...           %54
-                    'Autler_Townes_fit'...              %55
-                    'lorentzian_lineshape'...           %56
-                    'normalize_plot'...                 %57 normalizes plot based on atomic, dimer and trimer Rydberg lines.
-                    'exponentialfit'...                 %58 exponential fit to field.
-                    'threebodylossfit'...               %59 double exponential fit to a depVarfield
-                    'average_plot_two_vars'...          %60 double exponential fit to a depVarfield.
-                    'CustomCodeForPLotting'...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
-                    'DoubleExponential_v2'...           %62 Double Exponential version 2
-                    'TOF_Temperature_AvgDatasets'...    %63 TOF fits for individual scans and avg scans
-                    'plot_averaged_variable'            %64 Plot Of averaged variable based on scan ID
-                     };
+                    'rabi_oscillation_fit',...           %54
+                    'Autler_Townes_fit',...              %55
+                    'lorentzian_lineshape',...           %56
+                    'normalize_plot',...                 %57 normalizes plot based on atomic, dimer and trimer Rydberg lines.
+                    'exponentialfit',...                 %58 exponential fit to field.
+                    'threebodylossfit',...               %59 double exponential fit to a depVarfield
+                    'average_plot_two_vars',...          %60 double exponential fit to a depVarfield.
+                    'CustomCodeForPLotting',...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
+                    'DoubleExponential_v2',...           %62 Double Exponential version 2
+                    'TOF_Temperature_AvgDatasets',...    %63 TOF fits for individual scans and avg scans
+                    'plot_averaged_variable',...            %64 Plot Of averaged variable based on scan ID
+                    'sfi_triple_gaussian',...           %65 Fit a triple gaussian to the integrated SFI signal
+                    'sfi_double_gaussian',...           %66 Fit a double gaussian to the integrated SFI signal
+                    'sfi_quad_gaussian',...             %67 Fit a quadruple gaussian to the integrated SFI signal
+                    'zeeman_sfi_triple_lorentzian',...    %68 Fit a zeeman triple gaussian to the integrated SFI signal 
+                    'zeeman_sfi_quintuple_lorentzian'     %69 Fit a zeeman quintuple gaussian to the integrated SFI signal 
+                    };
+
 %plugInVec = [21,26,34,33,38];
 %plugInVec = [57,21,38];
 %plugInVec = [57,21,26];
-plugInVec = [];
+plugInVec = [21,26,36,37,68];
+%plugInVec = [21,22,26,38];
+
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -142,10 +150,16 @@ end
 % EXPERIMENTAL OPTIONS AND SETTINGS
 %%-----------------------------------------------------------------------%%
 %%%% MCS ROI select options - selects the roi to perform SFI integral upon
-roi1_minimum = 1;
-roi1_maximum = 87;
-roi2_minimum = 88;
-roi2_maximum = 200;
+roi1_minimum = 50;
+roi1_maximum = 54;
+roi2_minimum = 55;
+roi2_maximum = 67;
+
+% roi1_minimum = 54;
+% roi1_maximum = 59;
+% roi2_minimum = 60;
+% roi2_maximum = 68;
+
 
 %%%% Atom cloud properties
 sampleType     = 'Thermal';  % Options are Thermal, BEC, or Lattice
@@ -558,7 +572,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_RydbergSpectroscopy';
+analyPrefix     = '_mmWavePolarization';  %%%CHANGE FILE NAME
 analyOutputName = 'Analysis';
 
 %Two assumptions are made here,
