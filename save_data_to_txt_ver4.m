@@ -11,10 +11,10 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
     use_images = 0; %analyVar.UseImages;
     use_mcs = analyVar.UseMCS;
 
-    use_COM = 1;
+    use_COM = 0;
     
     indVarField = {'imagevcoAtom'};
-    depVarField = {'fileAtom'};
+    depVarField = {'sfiIntegral', 'sfiIntegral_roi1_ratio', 'sfiIntegral_roi2_ratio', 'sfiIntegral_roi1', 'sfiIntegral_roi2'};
     %depVarField = {'wavemeterAtom', 'wavemeterBack'};
     
     %{

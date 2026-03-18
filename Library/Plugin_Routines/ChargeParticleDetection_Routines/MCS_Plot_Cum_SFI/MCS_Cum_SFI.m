@@ -5,7 +5,7 @@ function output = MCS_Cum_SFI(analyVar, indivDataset, avgDataset)
     % Choose the range of the independent variable over which you want
     % to accumulate SFI profiles and plot them. 
 
-    UpperLim_imagevcoAtom = 340;      % Upper limit of independent variable named "imagevcoAtom"
+    UpperLim_imagevcoAtom = 800;      % Upper limit of independent variable named "imagevcoAtom"
     LowerLim_imagevcoAtom = 280;      % Lower limit of independent variable named "imagevcoAtom"
 
     for i = 1:analyVar.numBasenamesAtom  %Scan over all the file names selected in batch files.
@@ -16,9 +16,9 @@ function output = MCS_Cum_SFI(analyVar, indivDataset, avgDataset)
         %% FOR loop over all the shots of the experiment.
         for j = 1:indivDataset{i}.CounterAtom
             % IF condition to add SFI only for a declared range above.
-            if indivDataset{i}.imagevcoAtom(j) < UpperLim_imagevcoAtom && indivDataset{i}.imagevcoAtom(j)> LowerLim_imagevcoAtom
+            %if indivDataset{i}.imagevcoAtom(j) < UpperLim_imagevcoAtom && indivDataset{i}.imagevcoAtom(j)> LowerLim_imagevcoAtom
                 totsfi = totsfi + indivDataset{i}.mcsSpectra{j}(:,2:end);    %Loop for adding up the y values
-            end
+            %end
         end
         indivDataset{i}.cumSFI(:,2:end) = totsfi;     % Set the y values of the matrix by the dummy variable
         %% Create the graph

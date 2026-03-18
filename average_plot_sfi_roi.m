@@ -81,6 +81,8 @@ function funcOut = average_plot_sfi_roi(analyVar, indivDataset, avgDataset)
     avgDataset.(strcat(depVarField2,'_ratio')) = ratio2;
     avgDataset.(strcat(depVarField1,'_x')) = x;
     
+    %integral_value = trapz(x,y1);
+
     figure;
     hold on;
     for id = 1:length(scanIDs)
