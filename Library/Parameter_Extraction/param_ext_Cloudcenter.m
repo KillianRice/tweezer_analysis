@@ -15,6 +15,6 @@ for basenameNum = 1:analyVar.numBasenamesAtom
     end
     
     % Save cloud radius for each window into the indivDataset structure
-    indivDataset{basenameNum}.cntrX = cntrX;
-    indivDataset{basenameNum}.cntrY = cntrY;
+    indivDataset{basenameNum}.cntrX = cntrX.*analyVar.pixelsize;% SI units real units;
+    indivDataset{basenameNum}.cntrY = cntrY.*analyVar.pixelsize;% SI units real units;
 end
