@@ -1,0 +1,686 @@
+function indivDataset = param_extract_sfi_doubleSkew_OneLib(indivDataset, rawSide, libTransitionName, libFile)
+% Double-peak mixed fit (RAW + LIB) on *counts/bin* in the *voltage* domain.
+%
+% - LIB peak: [mu_lib, sigma_lib, f_lib, tau_lib] fixed from library; fit only A_lib
+% - RAW peak: fit [A_raw, mu_raw, sigma_raw, f_raw, tau_raw]
+% - Shared baseline b0 (counts/bin)
+% - Enforce mu ordering so the raw peak stays on the requested side of the lib peak
+%
+% Parameter vector q:
+%   q = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+%
+% Output fields (per scan i):
+%   indiv.sfiIntegralLeft{j}     = A_left  (counts above baseline)
+%   indiv.sfiIntegralRight{j}    = A_right (counts above baseline)
+%   indiv.sfiFitA_raw(j), indiv.sfiFitA_lib(j), indiv.sfiFitB0(j)
+%   indiv.sfiDoubleFitParams{j}  = [Araw mu_raw sigma_raw f_raw tau_raw Alib b0]
+%   indiv.sfiDoubleFitCounts{j}  = yhat (optional)
+
+    if nargin < 4 || isempty(libFile)
+        % Fall back to same path logic you used elsewhere
+        writerPath = which('saveSFIParamLibrary_UI');
+        if ~isempty(writerPath)
+            libFile = fullfile(fileparts(writerPath), 'sfi_fit_parameter_library.txt');
+        else
+            here = fileparts(mfilename('fullpath'));
+            libFile = fullfile(here, 'sfi_fit_parameter_library.txt');
+        end
+    end
+
+    rawSide = lower(strtrim(string(rawSide)));
+    if rawSide ~= "left" && rawSide ~= "right"
+        error('rawSide must be "left" or "right".');
+    end
+
+    % ---- Load library template ONCE ----
+    [mu_lib, sigma_lib, f_lib, tau_lib] = local_get_template(libFile, libTransitionName);
+
+    for i = 1:numel(indivDataset)
+
+        indiv = indivDataset{i};
+        if isempty(indiv) || ~isstruct(indiv), continue; end
+        if ~isfield(indiv,'CounterMCS') || indiv.CounterMCS < 1, continue; end
+        if ~isfield(indiv,'mcsSpectra') || isempty(indiv.mcsSpectra), continue; end
+
+        Nshots = min(indiv.CounterMCS, numel(indiv.mcsSpectra));
+
+        % ---- metadata ----
+        indiv.sfiDoubleFit_rawSide       = char(rawSide);
+        indiv.sfiDoubleFit_libTransition = char(libTransitionName);
+        indiv.sfiDoubleFit_libTemplate   = [mu_lib, sigma_lib, f_lib, tau_lib];
+
+        % ---- outputs ----
+        indiv.sfiIntegral          = cell(1, Nshots);   % optional total (Araw+Alib)
+        indiv.sfiIntegralLeft      = cell(1, Nshots);
+        indiv.sfiIntegralRight     = cell(1, Nshots);
+
+        indiv.sfiFitA_raw          = nan(1, Nshots);
+        indiv.sfiFitA_lib          = nan(1, Nshots);
+        indiv.sfiFitB0             = nan(1, Nshots);
+
+        indiv.sfiDoubleFitInitParams = cell(1, Nshots); % <-- NEW: store q0
+        indiv.sfiDoubleFitParams     = cell(1, Nshots); % qfit
+        indiv.sfiDoubleFitCounts     = cell(1, Nshots); % yhat total
+        indiv.sfiDoubleFitCountsRaw  = cell(1, Nshots); % raw component (no baseline)
+        indiv.sfiDoubleFitCountsLib  = cell(1, Nshots); % lib component (no baseline)
+
+        for j = 1:Nshots
+            if isempty(indiv.mcsSpectra{j}), continue; end
+            spec = indiv.mcsSpectra{j};
+            if size(spec,2) < 2, continue; end
+
+            t      = spec(:,1);
+            y      = spec(:,2);     % counts/bin
+            if numel(t) < 5, continue; end
+
+            t = t(:);
+            y = y(:);
+
+            % ---- convert to V axis (your helper should be on path) ----
+            % Must return a monotonically increasing vector, same size as t
+            [V, dV] = timeToVoltageAxis(t);  % <-- your standalone helper (hardcoded Vinf,tauRC inside)
+
+            % Safety: enforce increasing + unique (non-increasing breaks diff logic)
+            [V, ord] = sort(V);
+            y  = y(ord);
+            dV = dV(ord);              % keep widths aligned with sorted V
+            Vc = V + 0.5*dV;
+
+            if numel(V) < 5, continue; end
+            if any(~isfinite(V)) || any(~isfinite(y)), continue; end
+
+            % ---- baseline guess (counts/bin) ----
+            b0_0 = median(y(1:min(20,numel(y))));
+
+            % counts above baseline (for guessing)
+            yb = y - b0_0;
+            yb(yb < 0) = 0;
+
+           % ---- LIB model counts/bin for A=1, baseline=0 (uses bin-start axis V) ----
+            m_lib = skewHistModel_A([1, mu_lib, sigma_lib, 0, f_lib, tau_lib], V);
+            
+            % ---- initial A_lib by projection (linear LS on baseline-subtracted) ----
+            denom = (m_lib.' * m_lib);
+            if ~isfinite(denom) || denom <= 0, continue; end
+            Alib_0 = max(0, (yb.' * m_lib) / denom);
+            
+            % residual after removing lib contribution (for raw guesses)
+            resid = yb - Alib_0 .* m_lib;
+            resid(resid < 0) = 0;
+
+            % ---- raw mu guess constrained to chosen side of mu_lib ----
+            if rawSide == "left"
+                mask = (Vc < mu_lib);
+            else
+                mask = (Vc > mu_lib);
+            end
+
+            if any(mask)
+                [~, kk] = max(resid(mask));
+                Vcand = Vc(mask);
+                mu_raw0 = Vcand(kk);
+            else
+                [~, kk] = max(resid);
+                mu_raw0 = Vc(kk);
+            end
+            if ~isfinite(mu_raw0), mu_raw0 = median(Vc); end
+
+            % ---- sigma guess for raw peak (use your existing estimator in V domain) ----
+            sigma_raw0 = estimateSigmaLeftHalfMax(Vc, resid);
+            if ~isfinite(sigma_raw0) || sigma_raw0 <= 0
+                sigma_raw0 = 0.02 * (max(Vc) - min(Vc)); % fallback
+            end
+
+            % ---- tail fraction + tail scale guess ----
+            f_raw0   = 0.45;
+            tau_raw0 = 2.0;  % or 3.0 or 5.0, whatever matches your “good fits”
+
+            % ---- A_raw guess: leftover area above baseline after lib removal ----
+            Araw_0 = max(sum(resid), 0);
+
+            % ---- bounds + ordering constraint on mu_raw ----
+            Vmin = min(Vc); Vmax = max(Vc);
+            Vspan = Vmax - Vmin;
+            if Vspan <= 0, continue; end
+
+            sepV = .1;   % hard separation in VOLTS (hardcoded)
+            
+            % Enforce RAW peak to be at least +/- sepV away from library peak
+            if rawSide == "left"
+                % RAW must be LEFT of lib by at least sepV: mu_raw <= mu_lib - sepV
+                mu_lb = Vmin;
+                mu_ub = min(mu_lib - sepV, Vmax);
+            else
+                % RAW must be RIGHT of lib by at least sepV: mu_raw >= mu_lib + sepV
+                mu_lb = max(mu_lib + sepV, Vmin);
+                mu_ub = Vmax;
+            end
+            
+            % If constraints are impossible (overlapping peaks or sep too large), skip this shot
+            if ~(isfinite(mu_lb) && isfinite(mu_ub) && (mu_lb < mu_ub))
+                continue;
+            end
+
+            % Use a resolution floor tied to the bin width (prevents pathological spikes)
+            dVmed = median(dV(isfinite(dV) & dV > 0));
+            if ~isfinite(dVmed) || dVmed <= 0
+                dVmed = (max(V) - min(V)) / max(numel(V)-1, 1);
+            end
+            
+            sigMin = max(0.5*dVmed, 1e-6);      % at least ~half a bin (tune: 0.25–1.0)
+            sigMax = 5;                      % fine
+            
+            tauMin = 1e-3;   % or something tiny but >0
+            tauMax = 5.0;    % hard physical limit in VOLTS
+
+            % q = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+            q0 = [Araw_0, mu_raw0, sigma_raw0, f_raw0, tau_raw0, Alib_0, b0_0];
+
+            indiv.sfiDoubleFitInitParams{j} = q0(:).';
+
+            % Total "available" counts above baseline for this shot (rough cap scale)
+            Atot = sum(yb);                 % yb is counts/bin above baseline => sum is total counts
+            if ~isfinite(Atot) || Atot <= 0
+                Atot = sum(max(y - b0_0, 0));
+            end
+            Atot = max(Atot, 1);            % avoid zero/NaN
+            
+            Amax = 5 * Atot;                % generous cap (tune: 2–10x depending on how loose you want)
+            
+            lb = [0,   mu_lb, sigMin, .4, tauMin, 0,   -Inf];
+            ub = [Amax, mu_ub, sigMax, 1, tauMax, Amax, Inf];
+
+            % ---- model: counts/bin built from skewHistModel_A (nonuniform-safe) ----
+            % q = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+            model = @(q, Vaxis) ( ...
+                  skewHistModel_A([q(1), q(2), q(3), 0,     q(4), q(5)], Vaxis) ...
+                + skewHistModel_A([q(6), mu_lib, sigma_lib, 0,     f_lib, tau_lib], Vaxis) ...
+                + q(7) );
+
+            opt = optimoptions('lsqcurvefit', 'Display','off');
+
+            try
+                qfit = lsqcurvefit(model, q0, V, y, lb, ub, opt);
+            catch
+                continue;
+            end
+
+            % ---- evaluate & store ----
+            yhat = model(qfit, V);
+            yhat_raw = skewHistModel_A([qfit(1), qfit(2), qfit(3), 0, qfit(4), qfit(5)], V);
+            yhat_lib = skewHistModel_A([qfit(6), mu_lib, sigma_lib, 0, f_lib, tau_lib], V);
+
+            Araw = qfit(1);
+            mu_raw = qfit(2);
+            sig_raw = qfit(3);
+            f_raw = qfit(4);
+            tau_raw = qfit(5);
+            Alib = qfit(6);
+            b0   = qfit(7);
+
+            % Left/right assignment based on ACTUAL peak centers in V
+            if mu_raw < mu_lib
+                Aleft  = Araw;
+                Aright = Alib;
+            else
+                Aleft  = Alib;
+                Aright = Araw;
+            end
+            
+            indiv.sfiIntegralLeft{j}   = Aleft;
+            indiv.sfiIntegralRight{j}  = Aright;
+            indiv.sfiIntegral{j}       = Araw + Alib;
+
+            indiv.sfiFitA_raw(j) = Araw;
+            indiv.sfiFitA_lib(j) = Alib;
+            indiv.sfiFitB0(j)    = b0;
+
+            indiv.sfiDoubleFitParams{j} = qfit(:).';
+            indiv.sfiDoubleFitCounts{j} = yhat;
+            indiv.sfiDoubleFitCountsRaw{j} = yhat_raw;
+            indiv.sfiDoubleFitCountsLib{j} = yhat_lib;
+
+        end
+        % =========================================
+        % Plot LEFT/RIGHT amplitudes vs shot index j
+        % =========================================
+        if isfield(indiv,'sfiIntegralLeft') && isfield(indiv,'sfiIntegralRight')
+        
+            % Convert cell arrays to numeric vectors (empty -> NaN)
+            Aleft  = NaN(Nshots,1);
+            Aright = NaN(Nshots,1);
+        
+            for jj = 1:Nshots
+                if jj <= numel(indiv.sfiIntegralLeft) && ~isempty(indiv.sfiIntegralLeft{jj})
+                    Aleft(jj) = indiv.sfiIntegralLeft{jj};
+                end
+                if jj <= numel(indiv.sfiIntegralRight) && ~isempty(indiv.sfiIntegralRight{jj})
+                    Aright(jj) = indiv.sfiIntegralRight{jj};
+                end
+            end
+        
+            jvals = (1:Nshots).';
+            valid = isfinite(Aleft) | isfinite(Aright);
+        
+            if any(valid)
+                figure('Name', sprintf('Scan %d: LEFT/RIGHT amplitudes vs shot index', i), 'Color','w');
+                hold on; box on;
+        
+                plot(jvals(valid), Aleft(valid),  'o-', 'LineWidth', 1.5, 'DisplayName','A_{left}');
+                plot(jvals(valid), Aright(valid), 'o-', 'LineWidth', 1.5, 'DisplayName','A_{right}');
+        
+                xlabel('Shot index j');
+                ylabel('A (counts above baseline)');
+                title(sprintf('Scan %d: peak integrals per shot', i));
+                legend('Location','best');
+                set(gca,'FontSize',14);
+        
+                hold off;
+            end
+        end
+
+        % write back scan
+        indivDataset{i} = indiv;
+
+        % --- QC PLOTS: plot 5 evenly spaced shots for this scan (data + raw + lib + total) ---
+        try
+            if Nshots > 0
+        
+                % Use all shots that actually have stored fit parameters
+                plotIdx = [];
+                for jj = 1:Nshots
+                    if jj <= numel(indiv.sfiDoubleFitParams) && ~isempty(indiv.sfiDoubleFitParams{jj})
+                        plotIdx(end+1) = jj; %#ok<AGROW>
+                    end
+                end
+        
+                if ~isempty(plotIdx)
+        
+                    % Choose subplot grid size automatically
+                    nValid = numel(plotIdx);
+                    nCols = ceil(sqrt(nValid));
+                    nRows = ceil(nValid / nCols);
+        
+                    % Make one figure per scan with all fitted shots
+                    figure('Name', sprintf('Scan %d | Double-fit QC (%d shots)', i, nValid), ...
+                           'Color','w');
+                    tiledlayout(nRows, nCols, 'TileSpacing','compact', 'Padding','compact');
+        
+                    for kk = 1:numel(plotIdx)
+                        jj = plotIdx(kk);
+        
+                        spec = indiv.mcsSpectra{jj};
+                        if isempty(spec) || size(spec,2) < 2
+                            continue;
+                        end
+        
+                        t_plot = spec(:,1);
+                        y_plot = spec(:,2);   % counts/bin
+        
+                        % Convert to voltage
+                        [V_plot, dV_plot] = timeToVoltageAxis(t_plot);
+        
+                        % Enforce increasing axis for display + consistent model evaluation
+                        [V_plot, ord] = sort(V_plot);
+                        y_plot  = y_plot(ord);
+                        dV_plot = dV_plot(ord); %#ok<NASGU>
+        
+                        % Recompute yhat on THIS V_plot using stored qfit
+                        qfit = indiv.sfiDoubleFitParams{jj};
+                        if isempty(qfit)
+                            continue;
+                        end
+        
+                        % qfit = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+                        yhat_raw = skewHistModel_A([qfit(1), qfit(2), qfit(3), 0, qfit(4), qfit(5)], V_plot);
+                        yhat_lib = skewHistModel_A([qfit(6), mu_lib, sigma_lib, 0, f_lib, tau_lib], V_plot);
+                        yhat_tot = qfit(7) + yhat_raw + yhat_lib;
+        
+                        nexttile;
+                        hold on; box on;
+        
+                        plot(V_plot, yhat_tot, 'r-', 'LineWidth', 1.5, 'DisplayName','Total fit');
+                        plot(V_plot, yhat_raw, '--', 'LineWidth', 1.0, 'DisplayName','Raw');
+                        plot(V_plot, yhat_lib, '--', 'LineWidth', 1.0, 'DisplayName','Lib');
+                        plot(V_plot, y_plot, 'ko', 'MarkerSize', 2, 'MarkerFaceColor','k', 'DisplayName','Data');
+        
+                        title(sprintf('j = %d', jj));
+                        xlabel('Voltage (V)');
+                        ylabel('Counts/bin');
+                        set(gca,'FontSize', 8);
+        
+                        if kk == 1
+                            legend('Location','best');
+                        end
+        
+                        hold off;
+                    end
+        
+                    sgtitle(sprintf('Scan %d: all fitted shots', i), 'FontSize', 14);
+                end
+            end
+        catch ME
+            warning('QC plotting failed for scan %d: %s', i, ME.message);
+        end
+        % ---------------------------------------------------------
+        % Optional UI: choose one fitted shot j to save RAW fit
+        % into the parameter library using the standard TSV format
+        % ---------------------------------------------------------
+        try
+            local_save_doubleFitRawToLibrary_UI(indiv, i, libFile);
+        catch ME
+            warning('Library save UI failed for scan %d: %s', i, ME.message);
+        end
+        % =========================================================
+        % Table figure: initial guess vs fitted params for QC shots
+        % =========================================================
+        try
+            nPlot = 5;
+            if Nshots > 0
+                plotIdx = unique(round(linspace(1, Nshots, min(nPlot, Nshots))));
+        
+                % Only keep shots that actually have BOTH init + fit saved
+                keep = false(size(plotIdx));
+                for kk = 1:numel(plotIdx)
+                    jj = plotIdx(kk);
+                    keep(kk) = (jj <= numel(indiv.sfiDoubleFitInitParams) && ~isempty(indiv.sfiDoubleFitInitParams{jj})) && ...
+                               (jj <= numel(indiv.sfiDoubleFitParams)     && ~isempty(indiv.sfiDoubleFitParams{jj}));
+                end
+                plotIdx = plotIdx(keep);
+        
+                if ~isempty(plotIdx)
+        
+                    % Make one UI figure with a vertical stack of tables
+                    figT = uifigure('Name', sprintf('Scan %d | Guess vs Fit params (QC shots)', i), ...
+                                    'Position',[100 100 720 140*numel(plotIdx)+80]);
+        
+                    glT = uigridlayout(figT, [numel(plotIdx) 1]);
+                    glT.RowHeight   = repmat({140}, 1, numel(plotIdx));
+                    glT.ColumnWidth = {'1x'};
+                    glT.Padding     = [10 10 10 10];
+                    glT.RowSpacing  = 8;
+        
+                    paramNames = {'Araw','mu_raw','sigma_raw','f_raw','tau_raw','Alib','b0'}';
+        
+                    for kk = 1:numel(plotIdx)
+                        jj = plotIdx(kk);
+        
+                        q0   = indiv.sfiDoubleFitInitParams{jj}(:);
+                        qfit = indiv.sfiDoubleFitParams{jj}(:);
+        
+                        % Build a compact table: Parameter | Guess | Fit
+                        Ttab = table(paramNames, q0, qfit, ...
+                            'VariableNames', {'Parameter','Guess','Fit'});
+        
+                        uit = uitable(glT);
+                        uit.Data = Ttab;
+                        uit.ColumnName = Ttab.Properties.VariableNames;
+                        uit.RowName = {};
+                        uit.Layout.Row = kk;
+                        uit.Layout.Column = 1;
+        
+                        % Small header-like effect by prefixing first row with shot index
+                        % (MATLAB uitable has limited per-table title control)
+                        % So we just set a tooltip:
+                        uit.Tooltip = sprintf('Shot j=%d', jj);
+                    end
+                end
+            end
+        catch ME
+            warning('Guess-vs-fit table figure failed for scan %d: %s', i, ME.message);
+        end
+    end
+end
+
+% ===================== helpers =====================
+
+function [mu_ref, sigma_ref, f_ref, tau_ref] = local_get_template(libFile, transitionName)
+    if ~exist(libFile,'file')
+        error('Library file not found: %s', libFile);
+    end
+
+    T = readtable(libFile, 'FileType','text', 'Delimiter','\t');
+
+    if ~any(strcmp(T.Properties.VariableNames, 'transition_name'))
+        error('Library file missing column: transition_name');
+    end
+
+    nameCol = string(T.transition_name);
+    target  = string(transitionName);
+
+    idx = find(nameCol == target, 1, 'last');
+    if isempty(idx)
+        error('Transition "%s" not found in library.', target);
+    end
+
+    req = ["mu","sigma","f","tau"];
+    for k = 1:numel(req)
+        if ~any(strcmp(T.Properties.VariableNames, req(k)))
+            error('Library file missing column: %s', req(k));
+        end
+    end
+
+    mu_ref    = T.mu(idx);
+    sigma_ref = abs(T.sigma(idx)) + eps;
+    f_ref     = min(max(T.f(idx), 0), 1);
+    tau_ref   = abs(T.tau(idx)) + eps;
+
+    if ~isfinite(mu_ref) || ~isfinite(sigma_ref) || ~isfinite(f_ref) || ~isfinite(tau_ref)
+        error('Template contains non-finite values for "%s".', target);
+    end
+end
+
+function dV = local_binwidths(V)
+    V = V(:);
+    dV = diff(V);
+    if isempty(dV)
+        dV = 1;
+        return;
+    end
+    % Make a per-bin width vector (same length as V)
+    dV = [dV(1); (dV(1:end-1)+dV(2:end))/2; dV(end)];
+end
+function local_save_doubleFitRawToLibrary_UI(indiv, scan_i, libFile)
+% UI for selecting one fitted shot j from this scan and saving the RAW
+% component of the double fit to the shared TSV parameter library.
+%
+% Writes columns:
+% timestamp, scan_i, shot_j, transition_name, A, mu, sigma, b0, f, tau, dt
+%
+% RAW fit is taken from:
+% qfit = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+
+    if nargin < 3 || isempty(libFile)
+        writerPath = which('saveSFIParamLibrary_UI');
+        if ~isempty(writerPath)
+            libFile = fullfile(fileparts(writerPath), 'sfi_fit_parameter_library.txt');
+        else
+            here = fileparts(mfilename('fullpath'));
+            libFile = fullfile(here, 'sfi_fit_parameter_library.txt');
+        end
+    end
+
+    % Find valid fitted shots
+    if ~isfield(indiv, 'sfiDoubleFitParams') || isempty(indiv.sfiDoubleFitParams)
+        return;
+    end
+
+    validJ = [];
+    for j = 1:numel(indiv.sfiDoubleFitParams)
+        q = indiv.sfiDoubleFitParams{j};
+        if ~isempty(q) && numel(q) >= 7 && all(isfinite(q(1:7)))
+            validJ(end+1) = j; %#ok<AGROW>
+        end
+    end
+
+    if isempty(validJ)
+        return;
+    end
+
+    % ----------------------------
+    % UI window
+    % ----------------------------
+    fig = uifigure( ...
+        'Name', sprintf('Save RAW double-fit to library | Scan %d', scan_i), ...
+        'Position', [300 300 520 220]);
+
+    gl = uigridlayout(fig, [5 2]);
+    gl.RowHeight = {'fit','fit','fit','fit','fit'};
+    gl.ColumnWidth = {160, '1x'};
+    gl.Padding = [12 12 12 12];
+    gl.RowSpacing = 8;
+    gl.ColumnSpacing = 10;
+
+    lblTitle = uilabel(gl, ...
+        'Text', sprintf('Scan %d: select fitted shot to save', scan_i), ...
+        'FontWeight', 'bold', ...
+        'FontSize', 14);
+    lblTitle.Layout.Row = 1;
+    lblTitle.Layout.Column = [1 2];
+
+    lblJ = uilabel(gl, 'Text', 'Shot index j:');
+    lblJ.Layout.Row = 2;
+    lblJ.Layout.Column = 1;
+
+    dd = uidropdown(gl, ...
+        'Items', cellstr(string(validJ)), ...
+        'ItemsData', num2cell(validJ), ...
+        'Value', validJ(1));
+    dd.Layout.Row = 2;
+    dd.Layout.Column = 2;
+
+    lblName = uilabel(gl, 'Text', 'Transition name:');
+    lblName.Layout.Row = 3;
+    lblName.Layout.Column = 1;
+
+    nameField = uieditfield(gl, 'text', ...
+        'Value', '', ...
+        'Placeholder', 'e.g. 59_1S0');
+    nameField.Layout.Row = 3;
+    nameField.Layout.Column = 2;
+
+    previewLabel = uilabel(gl, ...
+        'Text', local_buildPreview(indiv, validJ(1)), ...
+        'Interpreter', 'none');
+    previewLabel.Layout.Row = 4;
+    previewLabel.Layout.Column = [1 2];
+
+    btnRow = uigridlayout(gl, [1 2]);
+    btnRow.ColumnWidth = {'1x','1x'};
+    btnRow.RowHeight = {'fit'};
+    btnRow.Layout.Row = 5;
+    btnRow.Layout.Column = [1 2];
+
+    uibutton(btnRow, ...
+        'Text', 'Save', ...
+        'ButtonPushedFcn', @onSave);
+
+    uibutton(btnRow, ...
+        'Text', 'Cancel', ...
+        'ButtonPushedFcn', @(~,~) close(fig));
+
+    dd.ValueChangedFcn = @(~,~) updatePreview();
+
+    uiwait(fig);
+
+    function updatePreview()
+        j = dd.Value;
+        previewLabel.Text = local_buildPreview(indiv, j);
+    end
+
+    function onSave(~,~)
+        transitionName = strtrim(string(nameField.Value));
+        if transitionName == ""
+            uialert(fig, 'Transition name cannot be empty.', 'Missing name');
+            return;
+        end
+
+        j = dd.Value;
+        local_append_doubleFitRaw_row(indiv, scan_i, j, transitionName, libFile);
+        close(fig);
+    end
+end
+function txt = local_buildPreview(indiv, j)
+% Small text preview of the RAW parameters for the selected shot
+
+    txt = 'No preview available.';
+    if ~isfield(indiv, 'sfiDoubleFitParams') || j > numel(indiv.sfiDoubleFitParams)
+        return;
+    end
+
+    q = indiv.sfiDoubleFitParams{j};
+    if isempty(q) || numel(q) < 7
+        return;
+    end
+
+    % q = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+    txt = sprintf(['RAW fit preview  |  ' ...
+                   'A = %.6g, mu = %.6g, sigma = %.6g, b0 = %.6g, f = %.6g, tau = %.6g'], ...
+                   q(1), q(2), q(3), q(7), q(4), q(5));
+end
+
+
+function local_append_doubleFitRaw_row(indiv, scan_i, shot_j, transitionName, libFile)
+% Append one RAW double-fit row to the existing library TSV
+
+    if nargin < 5 || isempty(libFile)
+        writerPath = which('saveSFIParamLibrary_UI');
+        if ~isempty(writerPath)
+            libFile = fullfile(fileparts(writerPath), 'sfi_fit_parameter_library.txt');
+        else
+            here = fileparts(mfilename('fullpath'));
+            libFile = fullfile(here, 'sfi_fit_parameter_library.txt');
+        end
+    end
+
+    if ~isfield(indiv, 'sfiDoubleFitParams') || shot_j > numel(indiv.sfiDoubleFitParams)
+        error('Selected shot j=%d does not exist in sfiDoubleFitParams.', shot_j);
+    end
+
+    q = indiv.sfiDoubleFitParams{shot_j};
+    if isempty(q) || numel(q) < 7
+        error('Selected shot j=%d does not contain a valid double fit.', shot_j);
+    end
+
+    % RAW part of q = [Araw, mu_raw, sigma_raw, f_raw, tau_raw, Alib, b0]
+    A   = q(1);
+    mu  = q(2);
+    sig = q(3);
+    f   = q(4);
+    tau = q(5);
+    b0  = q(7);
+
+    % dt extraction
+    dt = NaN;
+    if isfield(indiv, 'mcsSpectra') && shot_j <= numel(indiv.mcsSpectra) ...
+            && ~isempty(indiv.mcsSpectra{shot_j}) && size(indiv.mcsSpectra{shot_j},2) >= 1
+
+        t = indiv.mcsSpectra{shot_j}(:,1);
+        t = t(isfinite(t));
+        if numel(t) >= 2
+            dt = median(diff(t));
+        end
+    end
+
+    % If file doesn't exist, create header matching the existing library format
+    if ~exist(libFile, 'file')
+        fid = fopen(libFile, 'w');
+        if fid < 0
+            error('Could not open library file for writing: %s', libFile);
+        end
+        fprintf(fid, "timestamp\tscan_i\tshot_j\ttransition_name\tA\tmu\tsigma\tb0\tf\ttau\tdt\n");
+        fclose(fid);
+    end
+
+    fid = fopen(libFile, 'a');
+    if fid < 0
+        error('Could not open library file for appending: %s', libFile);
+    end
+
+    ts = string(datetime('now','Format','yyyy-MM-dd HH:mm:ss'));
+
+    fprintf(fid, "%s\t%d\t%d\t%s\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\n", ...
+        ts, scan_i, shot_j, transitionName, A, mu, sig, b0, f, tau, dt);
+
+    fclose(fid);
+end

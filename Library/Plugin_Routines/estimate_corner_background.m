@@ -1,0 +1,13 @@
+function bgOffset = estimate_corner_background(img, n)
+
+n = min([n, size(img,1)-1, size(img,2)-1]);
+
+cornerVals = [ ...
+    img(1:n, 1:n); ...
+    img(1:n, end-n+1:end); ...
+    img(end-n+1:end, 1:n); ...
+    img(end-n+1:end, end-n+1:end)];
+
+bgOffset = median(cornerVals(:), 'omitnan');
+
+end

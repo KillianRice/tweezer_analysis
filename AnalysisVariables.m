@@ -65,63 +65,61 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'Cloud_Density'...                  %18
                     'MCP_Signal_vs_Density'...          %19 %deprecated 2016.12.13
                     'BEC_Horizontal_Trap_Frequency',... %20
-                    'MCS_Integrated_SFI_Spectrum',...   %21 Plot integrated sfi vs. independent variable
-                    'MCS_Cum_SFI',...                   %22 Plot sum of all sfi from one scan vs time
-                    'MCS_Cum_SFI_Field',...             %23 Plot sum of all sfi from one scan vs field/voltage
-                    'Double_Exponential',...            %24 Double Exponential fit to number
-                    'Dirty_Fit',...                     %25 Edit this file to do a quick fit
-                    'average_plot',...                  %26 plot averages
-                    'breathing_mode',...                %27 fits cloud radius to a damped sine
-                    'gaussian_loss_feature',...         %28
-                    'density',...                       %29 Calculates cloud density given trap frequencies
-                    'triplet_lineshape',...             %30 Fits two symmetrically split gaussian peaks
-                    'split_fermion_rydberg_line',...    %31 fit the f=11/2 3S1 rydberg lineshape split by a magnetic field
-                    'split_fermion_rydberg_line_constrained',... %32 same fit as 31 but with certain parameters fixed.
-                    'data_vs_time',...                  %33 plot number, temp, ... vs timestamp
-                    'DAQ_voltages',...                  %34 plot DAQ voltages
-                    'avg_num_and_temp',...              %35 plot histograms of average atom number and temp
-                    'MCS_Integrated_SFI_roi_Spectrum',...%36 select roi in for Integrated SFI and plot vs Independent variable
-                    'average_plot_sfi_roi'...           %37 plots averages of the two roi's selected
-                    'sfi_gaussian',...                  %38 Gaussian fit
-                    'trap_effective_volume',...         %39
-                    'split_fermion_rydberg_line_pi_pi',...  %40
-                    'SFI_fit_and_exctract',...          %41
-                    'average_plot_fitted_SFI',...       %42
-                    'Fit_Template', ...                 %43 
-                    'beating_horizontal_trap_frequencies', ... %44
-                    'vertical_trap_frequency', ...      %45 
-                    'horizontal_trap_frequency', ...    %46
-                    'bec_rydberg_lifetime',...          %47
-                    'sinc_squared_lineshape',...        %48
-                    'sfi_tools',...                     %49
-                    'bec_rydberg_lifetime_no_sr2',...   %50
-                    'bec_decay_lifetime_roi',...        %51
-                    'voigt',...                         %52
-                    'lossspectrafit',...                %53
-                    'rabi_oscillation_fit',...           %54
-                    'Autler_Townes_fit',...              %55
-                    'lorentzian_lineshape',...           %56
-                    'normalize_plot',...                 %57 normalizes plot based on atomic, dimer and trimer Rydberg lines.
-                    'exponentialfit',...                 %58 exponential fit to field.
-                    'threebodylossfit',...               %59 double exponential fit to a depVarfield
-                    'average_plot_two_vars',...          %60 double exponential fit to a depVarfield.
-                    'CustomCodeForPLotting',...          %61 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
-                    'DoubleExponential_v2',...           %62 Double Exponential version 2
-                    'TOF_Temperature_AvgDatasets',...    %63 TOF fits for individual scans and avg scans
-                    'plot_averaged_variable',...            %64 Plot Of averaged variable based on scan ID
-                    'sfi_triple_gaussian',...           %65 Fit a triple gaussian to the integrated SFI signal
-                    'sfi_double_gaussian',...           %66 Fit a double gaussian to the integrated SFI signal
-                    'sfi_quad_gaussian',...             %67 Fit a quadruple gaussian to the integrated SFI signal
-                    'zeeman_sfi_triple_lorentzian',...    %68 Fit a zeeman triple gaussian to the integrated SFI signal 
-                    'zeeman_sfi_quintuple_lorentzian'     %69 Fit a zeeman quintuple gaussian to the integrated SFI signal 
+                    'param_extract_sfi_integral_full_fitting',... %21 Fit single or mixed MCS Spectra using skewed gaussian fit or an amplitude scaled prior fit
+                    'MCS_Integrated_SFI_Spectrum',...   %22 Plot integrated sfi vs. independent variable
+                    'MCS_Cum_SFI',...                   %23 Plot sum of all sfi from one scan vs time
+                    'MCS_Cum_SFI_Field',...             %24 Plot sum of all sfi from one scan vs field/voltage
+                    'Double_Exponential',...            %25 Double Exponential fit to number
+                    'Dirty_Fit',...                     %26 Edit this file to do a quick fit
+                    'average_plot',...                  %27 plot averages
+                    'breathing_mode',...                %28 fits cloud radius to a damped sine
+                    'gaussian_loss_feature',...         %29
+                    'density',...                       %30 Calculates cloud density given trap frequencies
+                    'triplet_lineshape',...             %31 Fits two symmetrically split gaussian peaks
+                    'split_fermion_rydberg_line',...    %32 fit the f=11/2 3S1 rydberg lineshape split by a magnetic field
+                    'split_fermion_rydberg_line_constrained',... %33 same fit as 31 but with certain parameters fixed.
+                    'data_vs_time',...                  %34 plot number, temp, ... vs timestamp
+                    'DAQ_voltages',...                  %35 plot DAQ voltages
+                    'avg_num_and_temp',...              %36 plot histograms of average atom number and temp
+                    'MCS_Integrated_SFI_roi_Spectrum',...%37 select roi in for Integrated SFI and plot vs Independent variable
+                    'average_plot_sfi_roi'...           %38 plots averages of the two roi's selected
+                    'sfi_gaussian',...                  %39 Gaussian fit
+                    'trap_effective_volume',...         %40
+                    'split_fermion_rydberg_line_pi_pi',...  %41
+                    'SFI_fit_and_exctract',...          %42
+                    'average_plot_fitted_SFI',...       %43
+                    'Fit_Template', ...                 %44 
+                    'beating_horizontal_trap_frequencies', ... %45
+                    'vertical_trap_frequency', ...      %46 
+                    'horizontal_trap_frequency', ...    %47
+                    'bec_rydberg_lifetime',...          %48
+                    'sinc_squared_lineshape',...        %49
+                    'sfi_tools',...                     %50
+                    'bec_rydberg_lifetime_no_sr2',...   %51
+                    'bec_decay_lifetime_roi',...        %52
+                    'voigt',...                         %53
+                    'lossspectrafit',...                %54
+                    'rabi_oscillation_fit',...          %55
+                    'Autler_Townes_fit',...             %56
+                    'lorentzian_lineshape',...          %57
+                    'normalize_plot',...                %58 normalizes plot based on atomic, dimer and trimer Rydberg lines.
+                    'exponentialfit',...                %59 exponential fit to field.
+                    'threebodylossfit',...              %60 double exponential fit to a depVarfield
+                    'average_plot_two_vars',...         %61 double exponential fit to a depVarfield.
+                    'CustomCodeForPLotting',...         %62 Custom Code.... Currently an altered version of averageplot for BMOT data in 11.11.2024
+                    'DoubleExponential_v2',...          %63 Double Exponential version 2
+                    'TOF_Temperature_AvgDatasets',...   %64 TOF fits for individual scans and avg scans
+                    'plot_averaged_variable',...        %65 Plot Of averaged variable based on scan ID
+                    'sfi_triple_gaussian',...           %66 Fit a triple gaussian to the integrated SFI signal
+                    'sfi_double_gaussian',...           %67 Fit a double gaussian to the integrated SFI signal
+                    'sfi_quad_gaussian',...             %68 Fit a quadruple gaussian to the integrated SFI signal
+                    'zeeman_sfi_triple_lorentzian',...  %69 Fit a zeeman triple gaussian to the integrated SFI signal 
+                    'zeeman_sfi_quintuple_lorentzian'...%70 Fit a zeeman quintuple gaussian to the integrated SFI signal 
                     };
 
-%plugInVec = [21,26,34,33,38];
-%plugInVec = [57,21,38];
-%plugInVec = [57,21,26];
-plugInVec = [21,26,36,37,68];
-%plugInVec = [21,22,26,38];
-
+plugInVec = [22,27,36,39];
+%plugInVec = [22,37,38,69];
+%plugInVec = [22,36,35];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -134,31 +132,87 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
-UseImages = 0;%set to 1 to load image data. Set to 0 when images are not needed (possibly for MCS analysis).
+UseImages = 0;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
 UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
 UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
-CameraType = 0; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
+CameraType = 1; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
-% Common Plotting flags
+UseTweezer = 0; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
+dummyScan = 0; %(doesnt work yet)%Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
+avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
+avgScanParam = '689 Frequency'; % What is the given name of that parameter
+avgOutSubDir = 'AveragedFits/';
+plotHistogram = 1;
+NormalizeTweezers = 1;
+
+analyVar.FluorescenceRemoveCornerOffset = 0;
+analyVar.FluorescenceClipNegative = 1;
+
+%% Plotting presentation (X value units) %%
+%variable to call in other functions is .xDataUnit & .xDataLabel
+TimeOrDetune  = 'Frequency'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
+
+
+%% Common Plotting flags
     lcl_logicFitLine = zeros(1,length(lcl_validFitLine)); 
 if isempty(plugInVec )~= 1
     lcl_logicFitLine(plugInVec) = 1;
 end
 
-% EXPERIMENTAL OPTIONS AND SETTINGS
+%% PARAMETER EVALUATION AND PLOTTING ROUTINE
+% Parameters are only extracted when it makes sense to plot them (i.e. BEC
+% number is plotted for condensates but ignored for thermal gases)
 %%-----------------------------------------------------------------------%%
-%%%% MCS ROI select options - selects the roi to perform SFI integral upon
-roi1_minimum = 50;
-roi1_maximum = 54;
-roi2_minimum = 55;
-roi2_maximum = 67;
+% Flag to Load Image Data
 
-% roi1_minimum = 54;
-% roi1_maximum = 59;
-% roi2_minimum = 60;
-% roi2_maximum = 68;
+SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
+plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
+plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
+plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
+
+%% ADDITIONAL PLOTTING VARIABLES
+%%-----------------------------------------------------------------------%%
+% Target specific plotting flags (all flags are booleans)
+plotRawImage  = 0;             % Processed raw images (trimmed and binned) - needs implementation
+
+plotNum       = plotInstParam; % Number in each image
+plotMeanNum   = plotMeanParam; % Mean number averaged across similar scans
+
+plotTemp      = 0; %plotInstParam; %Temperature of each image
+plotMeanTemp  = 0; %plotMeanParam; %Mean temperature averaged across similar scans
+
+plotSize      = 0; % Cloud radius of each image
+plotMeanSize  = 0; % Mean radius averaged across similar scans
+
+plotTrapFreq     = plotInstParam; % Geometric average of trap frequencies
+plotMeanTrapFreq = plotMeanParam; % Mean geometric average of trap frequencies
+
+plotPhaseSpace = plotInstParam; %Phase Space Density of each point given ODT evaporation parameters
+
+plotAmp      = 0; % Cloud amplitude of each image (2025)
+
+
+
+%% EXPERIMENTAL OPTIONS AND SETTINGS
+%%-----------------------------------------------------------------------%%
+%% MCS ROI select options - selects the roi to perform SFI integral upon
+
+%roi1_minimum = 73;
+%roi1_maximum = 86;
+%roi2_minimum = 87;
+%roi2_maximum = 104;
+
+roi1_minimum = 40; 
+roi1_maximum = 45; 
+roi2_minimum = 46; 
+roi2_maximum = 52; 
+
+ 
+
+
 
 
 %%%% Atom cloud properties
@@ -174,9 +228,9 @@ if CameraType == 0
     matrixSize     = [1280/binVertical 1024/binHorizontal]; % Matrix size of camera output: Set this to be the same as PixelFly dimensions.
 end
 if CameraType == 1
-    binHorizontal  = 1;%binning done by camera when taking images
-    binVertical    = 1;
-    matrixSize     = [600/binVertical 600/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
+    binHorizontal  = 2;%binning done by camera when taking images
+    binVertical    = 2;
+    matrixSize     = [2000/binVertical 2000/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
 end 
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
@@ -203,7 +257,7 @@ switch state
 end
 
 nStar = quantumNumberN - quantumDefect;
-mcs_roi = [1 -1];
+mcs_roi = [9 -1];
 
 positive_ramp_file = './ramps/n120/35v_pos.csv';
 negative_ramp_file = './ramps/n120/35v_neg.csv';
@@ -248,17 +302,7 @@ lsqSigBnd       = {0 'analyVar.cloudWinRadAtom'}; % Width bounds - upper bound i
 lsqCntBnd       = {0 '2*analyVar.cloudWinRadAtom + 1'}; % Peak position - upper bound is window radius
 lsqLinBnd       = {-Inf Inf}; % Linear background terms bound, all allowed to range from 0 to Inf
 
-%% PARAMETER EVALUATION AND PLOTTING ROUTINE
-% Parameters are only extracted when it makes sense to plot them (i.e. BEC
-% number is plotted for condensates but ignored for thermal gases)
-%%-----------------------------------------------------------------------%%
-% Flag to Load Image Data
-
-SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
-plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
-plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
-plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
+%%LOCATION FOR OLD PLOTTING FLAGS%%
 
 %% PicoScope
 plotCounts = 0; % look for scope traces from picoscope
@@ -266,10 +310,6 @@ SumCounts = 0;
 
 %% Photon Counter
 plotCounts_SR400 = 0;%photon counter
-
-
-% Plotting presentation
-TimeOrDetune  = 'Time'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
 
 titleFontSize = 18;
 axisfontsize  = 14;
@@ -375,26 +415,8 @@ Polarizability  = 236*Polarizability0;%F*m^2, polarizability of 1S0 state
 %% ADDITIONAL PLOTTING VARIABLES
 % Variables here may not be changed often so moved lower for the higher priority variables near the top
 %%-----------------------------------------------------------------------%%
-% Target specific plotting flags (all flags are booleans)
-plotRawImage  = 0;             % Processed raw images (trimmed and binned) - needs implementation
 
-plotNum       = plotInstParam; % Number in each image
-plotMeanNum   = plotMeanParam; % Mean number averaged across similar scans
-
-plotTemp      = 0; %plotInstParam; %Temperature of each image
-plotMeanTemp  = 0; %plotMeanParam; %Mean temperature averaged across similar scans
-
-plotSize      = 0; % Cloud radius of each image
-plotMeanSize  = 0; % Mean radius averaged across similar scans
-
-plotTrapFreq     = plotInstParam; % Geometric average of trap frequencies
-plotMeanTrapFreq = plotMeanParam; % Mean geometric average of trap frequencies
-
-plotPhaseSpace = plotInstParam; %Phase Space Density of each point given ODT evaporation parameters
-
-plotAmp      = 0; % Cloud amplitude of each image (2025)
-
-% Figure assignment
+%% Figure assignment
 % Assign base figure number used in the imagefit routine (if assigning figures for lineshape fitting plots please consult
 % this list first)
 % Actual figure numbers will iterate from the base number
@@ -538,9 +560,9 @@ switch CameraMag
             LatFreeExpCalib = [0,0,0,38,-38,0,0,]./22;
         end 
         if CameraType == 1  %condition for Zyla 4.2 camera
-            CameraRes  = 15; %um
+            CameraRes  = 0.8; %um GUESS
             pixelOnCam = 6.5*10^(-6); %m
-            MagImgSystem = 1.6;  %% 25 mm in-vacuo & 40 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
+            MagImgSystem = 8;  %% 25 mm in-vacuo & 200 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
             bin = binHorizontal;
             pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
             
@@ -572,14 +594,18 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_mmWavePolarization';  %%%CHANGE FILE NAME
+analyPrefix     = '_mmWavePolarizationUpTo40GHzHorn';  %%%CHANGE FILE NAME
+%analyPrefix     = '_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 analyOutputName = 'Analysis';
 
 %Two assumptions are made here,
 % (1) - The batch directory is at the same folder level as the dataDirectory
 % (2) - The batchhead files output by Labview are label as Files_yyyymmdd (Files_yyyymmdd_Bg for background)
 % First need to determine file structure of Analysis folder
-lcl_analyDir = pwd; % save Analysis Folder location
+
+lcl_analyDir = pwd; % save Analysis Folder location (USE THIS NORMALLY)
+disp(pwd)
+%lcl_analyDir = 'D:\Analysis\88Sr\2026.02.09_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 
 % Determine directory where all raw data files are saved (expected to mirror folder structure of Analysis folder)
 dataDir  = [strrep(strrep(lcl_analyDir,analyPrefix,''),[filesep 'Analysis' filesep],[filesep 'Raw_Data' filesep]) filesep];

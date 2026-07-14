@@ -1,0 +1,137 @@
+function saveSFIParamLibrary_UI(indivDataset, analyVar)
+% Save the GLOBAL summed SFI fit parameters to a local TSV library file.
+%
+% New workflow assumptions:
+% - There is one global summed fit for the whole dataset collection
+% - The fit parameters are stored in fields like:
+%       globalSkewFitParams_summed
+%       globalSummedSFISpectra_dV
+%       globalSummedSFISpectraContributors
+%
+% Output file:
+%   <this_file_folder>/sfi_fit_parameter_library.txt
+%
+% Columns:
+%   timestamp, transition_name, A, mu, sigma, b0, f, tau, dV, nContrib
+%
+% Notes:
+% - Keeps the important columns expected by template loaders:
+%       transition_name, mu, sigma, f, tau
+% - Appends one row per save action.
+
+    %#ok<INUSD> analyVar is unused in the new workflow, but kept in the
+    % function signature for compatibility with existing calls.
+
+    % ------------------------------------------------------------
+    % Find the first dataset entry containing the global summed fit
+    % ------------------------------------------------------------
+    idx = [];
+    for i = 1:numel(indivDataset)
+        if isempty(indivDataset{i}) || ~isstruct(indivDataset{i})
+            continue;
+        end
+
+        if isfield(indivDataset{i}, 'globalSkewFitParams_summed') && ...
+                ~isempty(indivDataset{i}.globalSkewFitParams_summed)
+            idx = i;
+            break;
+        end
+    end
+
+    if isempty(idx)
+        uialert(uifigure('Visible','off'), ...
+            'No global summed fit parameters were found to save.', ...
+            'Nothing to Save');
+        return;
+    end
+
+    % ------------------------------------------------------------
+    % Ask user for parameter-set / transition name
+    % ------------------------------------------------------------
+    answer = inputdlg( ...
+        {'Enter parameter set / transition name:'}, ...
+        'Save SFI Fit Parameters', ...
+        [1 60]);
+
+    if isempty(answer)
+        return;
+    end
+
+    transitionName = strtrim(answer{1});
+    if isempty(transitionName)
+        uialert(uifigure('Visible','off'), ...
+            'Parameter set name cannot be empty.', ...
+            'Missing Name');
+        return;
+    end
+
+    % ------------------------------------------------------------
+    % Pull fit parameters and metadata
+    % ------------------------------------------------------------
+    p = indivDataset{idx}.globalSkewFitParams_summed;
+
+    if numel(p) < 6
+        error('globalSkewFitParams_summed is malformed. Expected at least 6 parameters.');
+    end
+
+    A   = p(1);
+    mu  = p(2);
+    sig = p(3);
+    b0  = p(4);
+    f   = p(5);
+    tau = p(6);
+
+    if isfield(indivDataset{idx}, 'globalSummedSFISpectra_dV') && ...
+            ~isempty(indivDataset{idx}.globalSummedSFISpectra_dV)
+        dV = indivDataset{idx}.globalSummedSFISpectra_dV;
+    else
+        dV = NaN;
+    end
+
+    if isfield(indivDataset{idx}, 'globalSummedSFISpectraContributors') && ...
+            ~isempty(indivDataset{idx}.globalSummedSFISpectraContributors)
+        nContrib = size(indivDataset{idx}.globalSummedSFISpectraContributors, 1);
+    else
+        nContrib = NaN;
+    end
+
+    % ------------------------------------------------------------
+    % Write / append to library file
+    % ------------------------------------------------------------
+    here = fileparts(mfilename('fullpath'));
+    outFile = fullfile(here, 'sfi_fit_parameter_library.txt');
+
+    % Write header if file does not exist yet
+    if ~exist(outFile, 'file')
+        fid = fopen(outFile, 'w');
+        if fid < 0
+            error('Could not open output file for writing: %s', outFile);
+        end
+
+        fprintf(fid, 'timestamp\ttransition_name\tA\tmu\tsigma\tb0\tf\ttau\tdV\tnContrib\n');
+        fclose(fid);
+    end
+
+    fid = fopen(outFile, 'a');
+    if fid < 0
+        error('Could not open output file for appending: %s', outFile);
+    end
+
+    ts = string(datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss'));
+
+    fprintf(fid, '%s\t%s\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.9g\t%.0f\n', ...
+        ts, transitionName, A, mu, sig, b0, f, tau, dV, nContrib);
+
+    fclose(fid);
+
+    % ------------------------------------------------------------
+    % Confirmation
+    % ------------------------------------------------------------
+    msg = sprintf(['Saved parameter set:\n\n' ...
+                   '  Name: %s\n' ...
+                   '  File: %s\n' ...
+                   '  Contributors: %g'], ...
+                   transitionName, outFile, nContrib);
+
+    uialert(uifigure('Visible','off'), msg, 'Save Complete');
+end

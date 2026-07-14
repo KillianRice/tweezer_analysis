@@ -1,0 +1,422 @@
+
+
+function output = param_extract_sfi_integral_full_fitting(analyVar, indivDataset, avgDataset)
+    indivDataset= sfi_fit_allshots_ui_skeleton(analyVar, indivDataset);
+    %% Pack workspace into a structure for output
+    % If you don't want a variable output prefix it with lcl_
+    output = who();
+    output = v2struct(cat(1,'fieldNames',output(cellfun('isempty',regexp(output,'\<lcl_')))));
+end
+
+function indivDataset= sfi_fit_allshots_ui_skeleton(analyVar, indivDataset)
+% UI skeleton for choosing SFI fitting mode.
+% - Cancel button closes window (works)
+% - Proceed button is a stub (does nothing)
+% - Dropdowns dynamically show/hide controls as described
+
+%% Load library names (optional; safe if file missing)
+libNames = local_get_library_names();   % string array (can be empty)
+if isempty(libNames)
+    libItems = {'(no library file found)'};
+else
+    libItems = cellstr(libNames);
+end
+
+%% Build UI
+f = uifigure('Name','SFI Fit All Shots', ...
+    'Position',[300 300 620 420], ...     % [x y width height]
+    'Resize','on', ...
+    'CloseRequestFcn', @onCancelClose);   % make X behave like Cancel
+
+gl = uigridlayout(f,[9 2]);
+gl.RowHeight = {'fit','fit','fit','fit','fit','fit','fit','1x','fit'};
+gl.ColumnWidth = {210,'1x'};
+gl.Padding = [12 12 12 12];
+gl.RowSpacing = 8;
+gl.ColumnSpacing = 10;
+
+% Row 1: Single vs Double
+uilabel(gl,'Text','Peak type','FontWeight','bold');
+ddPeakType = uidropdown(gl, ...
+    'Items',{'Single peak','Double peak'}, ...
+    'Value','Single peak');
+
+% Row 2: Raw vs Library (only visible for Single peak)
+lblMethod = uilabel(gl,'Text','Fit method','FontWeight','bold');
+ddMethod = uidropdown(gl, ...
+    'Items',{'Raw fit','Library fit'}, ...
+    'Value','Library fit');
+
+% Row 3: Library name (only visible for Library fit)
+lblLib = uilabel(gl,'Text','Library transition','FontWeight','bold');
+ddLib = uidropdown(gl, ...
+    'Items',libItems, ...
+    'Value',libItems{1});
+% ---------------------------
+% Double-peak controls (rows 4-7)
+% ---------------------------
+
+% Row 4: Left peak method
+lblLeftMethod = uilabel(gl,'Text','Left peak method','FontWeight','bold');
+ddLeftMethod  = uidropdown(gl, ...
+    'Items',{'Raw fit','Library fit'}, ...
+    'Value','Library fit');
+
+% Row 5: Left library transition
+lblLeftLib = uilabel(gl,'Text','Left peak library','FontWeight','bold');
+ddLeftLib  = uidropdown(gl, ...
+    'Items',libItems, ...
+    'Value',libItems{1});
+
+% Row 6: Right peak method
+lblRightMethod = uilabel(gl,'Text','Right peak method','FontWeight','bold');
+ddRightMethod  = uidropdown(gl, ...
+    'Items',{'Raw fit','Library fit'}, ...
+    'Value','Library fit');
+
+% Row 7: Right library transition
+lblRightLib = uilabel(gl,'Text','Right peak library','FontWeight','bold');
+ddRightLib  = uidropdown(gl, ...
+    'Items',libItems, ...
+    'Value',libItems{1});
+% Row 8: help/status text
+txt = uitextarea(gl, ...
+    'Editable','off', ...
+    'Value',{' '});
+txt.Layout.Row = 8;
+txt.Layout.Column = [1 2];
+
+% Row 9: buttons
+btnRow = uigridlayout(gl,[1 2]);
+btnRow.Layout.Row = 9;
+btnRow.Layout.Column = [1 2];
+btnRow.ColumnWidth = {'1x','1x'};
+btnRow.RowHeight = {'fit'};
+btnRow.ColumnSpacing = 10;
+
+btnProceed = uibutton(btnRow,'Text','Proceed','ButtonPushedFcn',@onProceedStub);
+btnCancel  = uibutton(btnRow,'Text','Cancel','ButtonPushedFcn',@onCancelClose);
+
+%% Behavior: dropdowns control visibility
+ddPeakType.ValueChangedFcn = @onPeakTypeChanged;
+ddMethod.ValueChangedFcn   = @onMethodChanged;
+ddLeftMethod.ValueChangedFcn  = @onDoubleMethodChanged;
+ddRightMethod.ValueChangedFcn = @onDoubleMethodChanged;
+
+% Initialize correct visibility
+updateVisibility();
+updateMessage();
+
+%% ---- callbacks ----
+    function onDoubleMethodChanged(~,~)
+        updateVisibility();
+        updateMessage();
+    end
+    function onPeakTypeChanged(~,~)
+        updateVisibility();
+        updateMessage();
+    end
+
+    function onMethodChanged(~,~)
+        updateVisibility();
+        updateMessage();
+    end
+
+    function updateVisibility()
+        isSingle = strcmp(ddPeakType.Value,'Single peak');
+    
+        % --------------------
+        % Single-peak controls
+        % --------------------
+        isLibSingle = strcmp(ddMethod.Value,'Library fit');
+    
+        lblMethod.Visible = isSingle;
+        ddMethod.Visible  = isSingle;
+    
+        lblLib.Visible = isSingle && isLibSingle;
+        ddLib.Visible  = isSingle && isLibSingle;
+    
+        % --------------------
+        % Double-peak controls
+        % --------------------
+        isDouble = ~isSingle;
+    
+        lblLeftMethod.Visible  = isDouble;
+        ddLeftMethod.Visible   = isDouble;
+    
+        lblRightMethod.Visible = isDouble;
+        ddRightMethod.Visible  = isDouble;
+    
+        isLeftLib  = isDouble && strcmp(ddLeftMethod.Value,'Library fit');
+        isRightLib = isDouble && strcmp(ddRightMethod.Value,'Library fit');
+    
+        lblLeftLib.Visible = isLeftLib;
+        ddLeftLib.Visible  = isLeftLib;
+    
+        lblRightLib.Visible = isRightLib;
+        ddRightLib.Visible  = isRightLib;
+    end
+
+    function updateMessage()
+        if strcmp(ddPeakType.Value,'Double peak')
+
+            leftMode  = ddLeftMethod.Value;
+            rightMode = ddRightMethod.Value;
+
+            if strcmp(leftMode,'Raw fit') && strcmp(rightMode,'Raw fit')
+                txt.Value = { ...
+                    'Double peak selected.', ...
+                    'Invalid configuration: both peaks cannot be Raw fit.', ...
+                    'Select at least one Library fit.' ...
+                    };
+                return;
+            end
+
+            if strcmp(leftMode,'Library fit') && strcmp(rightMode,'Library fit')
+                txt.Value = { ...
+                    'Double peak + Library/Library selected.', ...
+                    ['Left transition: ', char(ddLeftLib.Value)], ...
+                    ['Right transition: ', char(ddRightLib.Value)], ...
+                    'Proceed will run the double-library fit.' ...
+                    };
+                return;
+            end
+
+            if strcmp(leftMode,'Raw fit') && strcmp(rightMode,'Library fit')
+                txt.Value = { ...
+                    'Double peak + Raw/Library selected.', ...
+                    ['Library transition: ', char(ddRightLib.Value)], ...
+                    'Proceed will run the one-library double fit.' ...
+                    };
+                return;
+            end
+
+            if strcmp(leftMode,'Library fit') && strcmp(rightMode,'Raw fit')
+                txt.Value = { ...
+                    'Double peak + Library/Raw selected.', ...
+                    ['Library transition: ', char(ddLeftLib.Value)], ...
+                    'Proceed will run the one-library double fit.' ...
+                    };
+                return;
+            end
+        end
+
+        if strcmp(ddMethod.Value,'Raw fit')
+            txt.Value = { ...
+                'Single peak + Raw fit selected.', ...
+                'This will fit A, mu, sigma, alpha for each shot (not wired yet).' ...
+                };
+        else
+            if isempty(libNames)
+                txt.Value = { ...
+                    'Single peak + Library fit selected.', ...
+                    'No library file found yet (dropdown is placeholder).', ...
+                    'Proceed is not wired yet.' ...
+                    };
+            else
+                txt.Value = { ...
+                    'Single peak + Library fit selected.', ...
+                    ['Transition: ', char(ddLib.Value)], ...
+                    'This will fit only A for each shot with mu/sigma/alpha fixed (not wired yet).' ...
+                    };
+            end
+        end
+    end
+    function onCancelClose(~,~)
+        % Make Cancel and window X behave the same:
+        % resume the blocked uiwait, then close the figure.
+        if isvalid(f)
+            uiresume(f);
+            delete(f);
+        end
+    end
+    function onProceedStub(~,~)
+    peakMode = ddPeakType.Value;
+    fitMode  = ddMethod.Value;
+    % Block invalid configuration: double peak + both raw
+    if strcmp(ddPeakType.Value,'Double peak')
+        if strcmp(ddLeftMethod.Value,'Raw fit') && strcmp(ddRightMethod.Value,'Raw fit')
+            uialert(f,'You cannot do a double raw fit. Select at least one Library fit.','Invalid configuration');
+            return;
+        end
+    end
+    % ===============================
+    % Single PEAK: Raw fit
+    % ===============================
+    if strcmp(peakMode,'Single peak') && strcmp(fitMode,'Raw fit')
+        indivDataset = param_extract_sfi_integral_fitting(analyVar, indivDataset); % <-- make sure signature matches!
+        uiresume(f);
+        delete(f);
+        return;    
+    end
+    % ===============================
+    % Single PEAK: Using parameters from library to fit
+    % ===============================
+    if strcmp(peakMode,'Single peak') && strcmp(fitMode,'Library fit')
+    
+        transitionName = string(ddLib.Value);
+    
+        indivDataset = sfi_fit_allshots_library_singlepeak(indivDataset, transitionName);
+    
+        uiresume(f);
+        delete(f);
+        return;
+    end
+    % ===============================
+    % DOUBLE PEAK: Raw + Library
+    % ===============================
+    if strcmp(ddPeakType.Value,'Double peak')
+    
+        leftMode  = ddLeftMethod.Value;     % 'Raw fit' or 'Library fit'
+        rightMode = ddRightMethod.Value;
+    
+        % --- Reject illegal config: Raw + Raw ---
+        if strcmp(leftMode,'Raw fit') && strcmp(rightMode,'Raw fit')
+            uialert(f, ...
+                'You cannot perform a double RAW fit. At least one peak must use a library template.', ...
+                'Invalid Configuration');
+            return;
+        end
+    
+        % ==================================================
+        % LIBRARY + LIBRARY CASE
+        % ==================================================
+        if strcmp(leftMode,'Library fit') && strcmp(rightMode,'Library fit')
+
+            leftTransitionName  = string(ddLeftLib.Value);
+            rightTransitionName = string(ddRightLib.Value);
+
+            % Absolute library file path (authoritative)
+            libFile = fullfile( ...
+                'D:\Analysis\88Sr\2026.02.09_mmWavePolarization\Library\Parameter_Extraction\SFI Related Plugins', ...
+                'sfi_fit_parameter_library.txt');
+
+            if ~exist(libFile,'file')
+                uialert(f, "Library file not found at:\n" + libFile, 'Missing library file');
+                return;
+            end
+
+            indivDataset = param_extract_sfi_doubleSkew_TwoLib( ...
+                                indivDataset, ...
+                                leftTransitionName, ...
+                                rightTransitionName, ...
+                                libFile);
+
+            uiresume(f);
+            delete(f);
+            return;
+        end
+        % ==================================================
+        % RAW + LIBRARY CASE
+        % ==================================================
+    
+        if strcmp(leftMode,'Raw fit') && strcmp(rightMode,'Library fit')
+    
+            rawSide = 'left';
+            libTransitionName = ddRightLib.Value;
+    
+        elseif strcmp(leftMode,'Library fit') && strcmp(rightMode,'Raw fit')
+    
+            rawSide = 'right';
+            libTransitionName = ddLeftLib.Value;
+    
+        else
+            uialert(f,'Unexpected configuration.','Error');
+            return;
+        end
+    
+        % Call your function
+        indivDataset = param_extract_sfi_doubleSkew_OneLib( ...
+                            indivDataset, ...
+                            rawSide, ...
+                            libTransitionName);
+    
+        uiresume(f);
+        delete(f);
+        return;
+        end    
+    
+
+    % close the UI if you want
+    close(f);
+   end
+
+% Set initial message
+updateMessage();
+
+% ===== BLOCK here until Proceed/Cancel/X =====
+uiwait(f);
+
+% If user closed the UI, just return (indivDataset unchanged)
+if ~isvalid(f)
+    return;
+end
+
+% If we got here, Proceed/Cancel should have deleted the figure already,
+% but in case it wasn't:
+try
+    delete(f);
+catch
+end
+
+end
+
+%% -------- helper: read names from local library file --------
+function libNames = local_get_library_names()
+% Returns unique transition_name strings from the library file.
+% Searches in sensible locations to avoid path mismatches.
+
+    libNames = string.empty(0,1);
+
+    % Candidate locations (in priority order)
+    candidates = {};
+
+    % 1) Folder where the library is written (next to saveSFIParamLibrary_UI.m)
+    writerPath = which('saveSFIParamLibrary_UI');
+    if ~isempty(writerPath)
+        candidates{end+1} = fullfile(fileparts(writerPath), 'sfi_fit_parameter_library.txt');
+    end
+
+    % 2) Folder of *this* file (where the UI skeleton lives)
+    thisPath = mfilename('fullpath');
+    if ~isempty(thisPath)
+        candidates{end+1} = fullfile(fileparts(thisPath), 'sfi_fit_parameter_library.txt');
+    end
+
+    % 3) Current working directory
+    candidates{end+1} = fullfile(pwd, 'sfi_fit_parameter_library.txt');
+
+    % Pick the first one that exists
+    libFile = '';
+    for k = 1:numel(candidates)
+        if exist(candidates{k}, 'file')
+            libFile = candidates{k};
+            break;
+        end
+    end
+
+    if isempty(libFile)
+        return;
+    end
+
+    % Read and extract names
+    try
+        opts = detectImportOptions(libFile,'FileType','text');
+        opts.Delimiter = '\t';
+        T = readtable(libFile, opts);
+
+        if ~ismember('transition_name', T.Properties.VariableNames)
+            return;
+        end
+
+        names = string(T.transition_name);
+        names = strip(names);
+        names = names(names ~= "");
+        libNames = unique(names,'stable');
+
+    catch
+        libNames = string.empty(0,1);
+    end
+end
+
+
