@@ -21,16 +21,38 @@ if analyVar.numBasenamesAtom > 5
 end
 indivDataset = get_indiv_batch_data(analyVar);
 
-% Background fitting
-imagefit_Backgrounds_PCA(analyVar,indivDataset)
+if analyVar.UseTweezer == 1
+    % 1. Still make/save individual OD images
+    imagefit_Backgrounds_PCA_V2(analyVar, indivDataset);
 
-% Functional fitting
-imagefit_NumDistFit(analyVar,indivDataset)
-
-% Plotting routine
-if analyVar.SavePlotData == 1
-    % Save data from output
-    PlotData = imagefit_ParamEval(analyVar,indivDataset);
+    % 2. Grab OD Total Counts for Histograms
+    indivDataset = param_ext_ODTotalCounts(analyVar,indivDataset);
+    
+    % 3. Average matching scan points across scans
+    avgDataset = imagefit_BuildAveragedScans(analyVar, indivDataset);
+    
+    % 4. Fit averaged OD images only
+    imagefit_NumDistFit_Averaged(analyVar, indivDataset, avgDataset);
+    
+    % 5. Evaluate averaged fits
+    if analyVar.SavePlotData == 1
+        PlotData = imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
+    else
+        imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
+    end
 else
-    imagefit_ParamEval(analyVar,indivDataset);
-end 
+
+    % Background fitting
+    imagefit_Backgrounds_PCA(analyVar,indivDataset)
+    
+    % Functional fitting
+    imagefit_NumDistFit(analyVar,indivDataset)
+    
+    % Plotting routine
+    if analyVar.SavePlotData == 1
+        % Save data from output
+        PlotData = imagefit_ParamEval(analyVar,indivDataset);
+    else
+        imagefit_ParamEval(analyVar,indivDataset);
+    end 
+end

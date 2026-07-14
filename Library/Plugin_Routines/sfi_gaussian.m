@@ -11,7 +11,7 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
 
         x0 = zeros(4,1);
         x0(1) = max(y);
-        x0(2) = sum(x.*y)/sum(y);
+        x0(2) =  sum(x.*y)/sum(y);
         x0(3) = sqrt(sum((x-x0(2)).^2.*y)/sum(y));
         x0(3) = .05;
         x0(4) = min(y);

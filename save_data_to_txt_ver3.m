@@ -6,7 +6,7 @@ function [files] = save_data_to_txt_ver3(analyVar, indivDataset, avgDataset)
     output_dir = './out/';
     
     % Options
-    use_dac = 1;
+    use_dac = 0;
     use_labview = 1;
     use_images = analyVar.UseImages;
     

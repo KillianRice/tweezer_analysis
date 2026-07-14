@@ -29,7 +29,7 @@ function funcOut = zeeman_sfi_quintuple_lorentzian(analyVar, indivDataset, avgDa
         y2 = y - bg;
         %Center Peak
         %x0 = sum(x.*y2)/sum(y2);
-        x0 = 15010.9;
+        x0 = 15122.3;
         %other peak locations
         %sort x values in ascending order for scans that are backwards
         [xs, idx] = sort(x);
@@ -37,22 +37,22 @@ function funcOut = zeeman_sfi_quintuple_lorentzian(analyVar, indivDataset, avgDa
         [pks, locs] = findpeaks(ys, xs, ...
             'MinPeakProminence', 0.1*max(y2), ...
             'SortStr','descend');
-        locs = sort(locs(1:3));
+        %locs = sort(locs(1:3));
         %Delta = mean([x0 - locs(1), locs(3) - x0]);
-        Delta = 1.91;
+        Delta = 1.7;
 
         %Amplitudes
         A1 = interp1(x,y2,x0,'linear','extrap');
-        A1 = 0.02;
+        A1 = 0.05;
         A0 = interp1(x,y2,x0-Delta,'linear','extrap');
-        A0 = 0.01;
+        A0 = 0.02;
         A2 = interp1(x,y2,x0+Delta,'linear','extrap');
         A2 = 0.05;
         A3 = A1;
-        A4 = 0.01;
+        A4 = 0.03;
         %Widths
-        sigma_est = sqrt(abs(sum((x-x0).^2 .* abs(y2)) / abs(sum(y2))));
-        sigma_est = 0.15;
+        %sigma_est = sqrt(abs(sum((x-x0).^2 .* abs(y2)) / abs(sum(y2))));
+        sigma_est = 0.1;
         %sigma_est = (max(x) - min(x)) / 20;
         x0 = [
             A0
@@ -107,7 +107,7 @@ function funcOut = zeeman_sfi_quintuple_lorentzian(analyVar, indivDataset, avgDa
         'PlotInitialGuess', true,...
         'XAxisLabel', 'mmWave WindFreak Synth (MHz)' ,...
         'YAxisLabel', 'MCS Signal Ratio',...
-        'CoeffNames', {{'Amplitude 1', 'Amplitude 2', 'Amplitude 3', 'Amplitude 4','Amplitude 5', 'FWHM 1', 'FWHM 2', 'FWHM 3', 'FWHM 4','FWHM 5', 'Zeeman Splitting', 'Center Peak','Offset'}},...
+        'CoeffNames', {{'Area 1', 'Area 2', 'Area 3', 'Area 4','Area 5', 'FWHM 1', 'FWHM 2', 'FWHM 3', 'FWHM 4','FWHM 5', 'Zeeman Splitting', 'Center Peak','Offset'}},...
         'CoeffUnits', {{'','','','','','MHz','MHz','MHz','MHz','MHz','MHz','MHz','',''}},...
         'AnnotateFunction', @myAnnotate,...
         'FitTitle', 'Triple Lorentzian Fit',...
@@ -194,9 +194,9 @@ end
 
 function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
     
-    fitParams = 1; %%check fit before trying to fit params
+    fitParams = 0; %%%check fit before trying to fit params %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    % convert the HWHM to FWHM
+    % convert the H   WHM to FWHM
     coeffs(6) = coeffs(6)*2;
     coeffs(7) = coeffs(7)*2;
     coeffs(8) = coeffs(8)*2;
@@ -221,6 +221,9 @@ function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
     
     %Fitting data from scans to the field amplitude equations
     %Using ratios of each othe peaks
+
+    % coeffs(1) = 0.005;
+    % coeffs(5) = 0.001;
     
     denominator = sqrt(coeffs(1)^2 + coeffs(2)^2 + coeffs(3)^2 + coeffs(4)^2 + coeffs(5)^2);
     d1 = coeffs(1) / denominator; %left most peak
@@ -257,17 +260,17 @@ function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
 
     % Data values (measured peak ratios of peak_i / sum of total peaks area)
     disp('Data:');
-    %data = [d1; d2; d3; d4; d5; 1]
-    data = [1; 0; 0; 0; 1; 1] %%Testing
+    data = [d1; d2; d3; d4; d5; 1]
+    %data = [1; 0; 0; 0; 1; 1] %%Testing
 
     % Measurement errors (standard deviations)
     disp('Errors:');
-    %errors = [Error1; Error2; Error3; Error4; Error5; .01]  % Corresponding uncertainties
-    errors = [0.001; 0.001; 0.001; 0.001; 0.001; 0.001]  % %%Testing
+    errors = [Error1; Error2; Error3; Error4; Error5; .01]  % Corresponding uncertainties
+    %errors = [0.001; 0.001; 0.001; 0.001; 0.001; 0.001]  % %%Testing
     
     % Initial guess for parameters
-    %initial_guess = [sqrt(1/3) sqrt(1/3) sqrt(1/3) 0 0 0];
-    initial_guess = [0 sqrt(1/2) sqrt(1/2) 0 0 0]; %%Testing
+    initial_guess = [sqrt(1/3) sqrt(1/3) sqrt(1/3) 0];
+    %initial_guess = [0 sqrt(1/2) sqrt(1/2) 0]; %%Testing
     
     disp('Initial Difference:');
     residuals(initial_guess,data,errors)
@@ -278,10 +281,10 @@ function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
     Nsamples = 1000;
 
     params_MC = zeros(Nsamples,length(initial_guess));
-    lb = [0 0 0 -pi -pi -pi];
-    ub = [1 1 1 pi pi pi];
+    lb = [0 0 0 -pi];
+    ub = [1 1 1 pi];
     options = optimoptions('lsqnonlin',...
-    'MaxFunctionEvaluations',5000,...
+    'MaxFunctionEvaluations',10000,...
     'MaxIterations',2000);
     
     if fitParams == 1
@@ -296,8 +299,8 @@ function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
         params_est = mean(params_MC);
         paramsErr  = std(params_MC);
     else
-        params_est = zeros(1, 6);
-        paramsErr  = zeros(1, 6);
+        params_est = zeros(1, 4);
+        paramsErr  = zeros(1, 4);
     end
     
     %   Options for Jacobian output needed for error calculation of the
@@ -363,21 +366,27 @@ function r = residuals(params, data, errors)
     p2 = params(2); % E_-
     p3 = params(3); % E_+
     p4 = params(4); % phi_(+0) "difference of plus and 0"
-    p5 = params(5); % phi_(-0)
-    p6 = params(6); % phi_(-+)
+    % p5 = params(5); % phi_(-0)
+    % p6 = params(6); % phi_(-+)
 
 
 
-    denominator = sqrt( p2^4 + p3^4 + p1^2*p1^2*(1 + cos(2*p4)) + p2^2*p1^2*(1 + cos(2*p5)) + (2/3)*p1^4 + ...
-        (1/3)*p2^2*p3^2*(1 + cos(2*p6)) +(4/3)*p1^2*p2*p3*cos(p6) );
+    %denominator = sqrt( p2^4 + p3^4 + p1^2*p1^2*(1 + cos(2*p4)) + p2^2*p1^2*(1 + cos(2*p5)) + (2/3)*p1^4 + ...
+    %    (1/3)*p2^2*p3^2*(1 + cos(2*p6)) +(4/3)*p1^2*p2*p3*cos(p6) );
+
+    denominator = sqrt(p2^4 + p3^4 + 2*p1^2*p2^2 + 2*p1^2*p3^2 + 2/3*sqrt(p1^4 + p2^2*p3^2 + p1^2*p2*p3*cos(p4)));
     
     % six nonlinear equations 
     % (left most peak, peak 2, center peak, peak 4, right most peak,
     % constraint)
+    %f2 = sqrt(2)*p1*p2*cos(p5) / denominator;
+    %f3 = sqrt(2)*(p1^2 + p2*p3*cos(p6)) / denominator;
+    %f4 = sqrt(2)*p1*p3*cos(p5) / denominator;
+    
     f1 = p2^2 / denominator;
-    f2 = sqrt(2)*p1*p2*cos(p5) / denominator;
-    f3 = sqrt(2)*(p1^2 + p2*p3*cos(p6)) / denominator;
-    f4 = sqrt(2)*p1*p3*cos(p5) / denominator;
+    f2 = sqrt(2)*p1*p2 / denominator;
+    f3 = sqrt(2/3)*sqrt(p1^4 + p2^2*p3^2 + p1^2*p2*p3*cos(p4)) / denominator;
+    f4 = sqrt(2)*p1*p3 / denominator;
     f5 = p3^3 / denominator;
     f6 = p1^2 + p2^2 + p3^2;
     

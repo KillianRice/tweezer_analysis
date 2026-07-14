@@ -84,7 +84,7 @@ if analyVar.UseImages
 
     %% Image statistics
     % Extract relevant experimental statistics from each image and plot once found
-
+    
     % Atom Number - Find number in each window of each image
     indivDataset = param_ext_AtomNum(analyVar,indivDataset);
     % Plotting number in each batch

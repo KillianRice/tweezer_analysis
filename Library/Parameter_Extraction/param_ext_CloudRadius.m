@@ -19,7 +19,7 @@ function [indivDataset] = param_ext_CloudRadius(analyVar,indivDataset)
 %%%%%%%-----------------------------------%%%%%%%%%%
 % Cloud radius accounting for finite resolution of the imaging system
 % Reference - Mi Yan's PhD thesis Appendix A (eq. A.6)
-effPixelSize = analyVar.sizefactor*1e6; %um, pixel size
+effPixelSize = analyVar.sizefactor*1e6 %um, pixel size
 funcCloudRad = @(coeffs,fitWidth) sqrt((abs(coeffs.(fitWidth)).*effPixelSize).^2 - analyVar.CameraRes.^2);
 
 %% Decide cloud width parameters needed

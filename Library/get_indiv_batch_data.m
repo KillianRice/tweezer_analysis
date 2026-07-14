@@ -187,5 +187,10 @@ if analyVar.UseMCS
     indivDataset = param_extract_sfi_integral(analyVar, indivDataset);
 end
 
+%%add component for tweezer analysis
+if analyVar.UseTweezer
+    %indivDataset = param_ext_ODTotalCounts(analyVar, indivDataset);
+end
+
 %% Clean Workspace
 fclose all;

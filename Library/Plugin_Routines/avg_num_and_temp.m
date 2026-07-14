@@ -5,7 +5,7 @@ function funcOut = avg_num_and_temp(analyVar, indivDataset, avgDataset)
         tempXfield = 'atomTempX';
         tempYfield = 'atomTempY';
     else
-        numfield = 'numberAtom';
+        numfield = 'sfiIntegral';
         tempXfield = 'tempXAtom';
         tempYfield = 'tempYAtom';
     end
@@ -40,7 +40,7 @@ function funcOut = avg_num_and_temp(analyVar, indivDataset, avgDataset)
             figure;
             hold on;
             for id = 1:length(scanIDs)
-                histogram(groupvectors{i}{id});
+                histogram(groupvectors{i}{id}, 5);
                 myAnnotation(fields{i}, mean(groupvectors{i}{id}), std(groupvectors{i}{id}),id);
             end
             xlabel(fields{i});

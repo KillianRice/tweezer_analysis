@@ -6,7 +6,7 @@ function funcOut = DAQ_voltages(analyVar, indivDataset, avgDataset)
 
     use_channels = [1 1 1 1 1 0 1 0]; % which channels to plot
     
-    channel_names = {'922nmMOTCavityPD (V)',...                             % AI 0
+    channel_names = {'408nmPD (V)',...                             % AI 0
                     '461nmZeemanPD (V)',...                                 % AI 1
                     '413nm_monPD',...                                       % AI 2
                     '461nm_MOTPD',...                                       % AI 3

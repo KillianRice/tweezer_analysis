@@ -2,6 +2,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     
     %% Fit_Template - Joe Whalen 2019.10.02
     % Updated on 2025.02.04 by SKK to modify the form to A * Exp[-t/tau] + C 
+    % Updated on 2026.05.21 by BLT to include normalization
     
     % This function calls the base_fit script that does all of the fitting
     % and displays all of the plots for a given fitting routine. To use
@@ -18,24 +19,32 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     form = @(coeffs, x) coeffs(1)*exp(-x/coeffs(2)) + coeffs(3); % A * Exp[-t/tau] + C 
     
     indVarField = 'imagevcoAtom'; % independent variable
-    depVarField = 'winTotNum'; % dependent variable
+    depVarField = 'sfiIntegral'; % dependent variable
     %depVarField = 'numberAtom'; % dependent variable
+
+    %normalize option (also adjust within initial guess)
+    normalize = 0;
     
     %% initial guess code
     % fill in this function to estimate the values of the fit parameters,
     % alternatively you can just have thist function return a constant
     % vector if you don't have a simple way of obtaining an initial guess
     function initialguess = x0(xdata, ydata)
-        % code
-        % that
-        % guesses
-        % initial
-        % params
+        % code that guesses initial params
         % can also return a constant vector with length equal to the number
         % of parameters in the fit function
-        initialguess(1) = max(ydata);
-        initialguess(2) = (max(xdata)-min(xdata));
-        initialguess(3) = min(ydata);
+        
+        %normalize option
+        normal = 0;
+        if normal
+            initialguess(1) = max(ydata)/max(ydata);
+            initialguess(2) = (max(xdata)-min(xdata));
+            initialguess(3) = min(ydata)/max(ydata);
+        else
+            initialguess(1) = 1000;
+            initialguess(2) = (max(xdata)-min(xdata));
+            initialguess(3) = min(ydata);
+        end
     end
 
 
@@ -75,7 +84,11 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
         'PlotInitialGuess', true,...
         'Statistics', 'gaussian');
     
-    base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)
+    if normalize
+        normalized_base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)
+    else
+        base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)
+    end
 
     funcOut.analyVar = analyVar;
     funcOut.indivDataset = indivDataset;

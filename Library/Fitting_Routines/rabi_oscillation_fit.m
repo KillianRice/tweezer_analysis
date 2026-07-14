@@ -19,7 +19,7 @@ function funcOut = rabi_oscillation_fit(analyVar, indivDataset, avgDataset)
     
     %% initial guess code
     function initialguess = x0(xdata, ydata)
-        initialguess = [0.4,550*2*pi,1*pi,40,.4];
+        initialguess = [0.4,50*2*pi*1,0.5*pi,100,.4];
         %initialguess(1) = min(ydata)-max(ydata);
         initialguess(5) = mean(ydata);
     end
@@ -108,7 +108,7 @@ function funcOut = rabi_oscillation_fit(analyVar, indivDataset, avgDataset)
         'CoeffNames', {{'Ampl.', 'Freq.', 'phase', 'decay rate','Coh. time'}},...
         'CoeffUnits', {{'','MHz','rads','/micsec','micsec.'}},...
         'AnnotateFunction', @myAnnotate,...
-        'PlotInitialGuess', false);
+        'PlotInitialGuess', true);
     [xav1,yav1,yer1,coefflist1,coefflist_err1]  = base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options);
     if(calculate_contrast == 1)
         h = findall(gcf, 'Type', 'textboxshape');
@@ -119,6 +119,33 @@ function funcOut = rabi_oscillation_fit(analyVar, indivDataset, avgDataset)
         h = findall(gcf, 'Type', 'textboxshape');
         h.String{end} = ['Contrast: ', unc_string(contrast_val,contrast_err)];
     end 
+
+    coefflist1new = coefflist2{1};
+    target_y = 0.5;
+    
+    t_min = 0;
+    t_max = 6e-3;   % choose your real physical max time here
+    N = 10000;
+    
+    t_grid = linspace(t_min, t_max, N);
+    
+    root_fun = @(t) form(coefflist1new, t) - target_y;
+    
+    y_grid = arrayfun(root_fun, t_grid);
+    
+    % Find first crossing of target_y
+    idx = find(y_grid(1:end-1).*y_grid(2:end) <= 0, 1, 'first');
+    
+    if isempty(idx)
+        fprintf('No crossing found in the specified interval.\n');
+    else
+        bracket = [t_grid(idx), t_grid(idx+1)];
+    
+        earliest_time = fzero(root_fun, bracket);
+    
+        fprintf('Earliest solution: %.8g ms\n', earliest_time);
+        fprintf('Earliest solution: %.4f ns\n', earliest_time*1e6);
+    end
     
     if (saveVals== 1)
         filename = "MMWavePlotVals.xlsx";
@@ -141,11 +168,12 @@ function funcOut = rabi_oscillation_fit(analyVar, indivDataset, avgDataset)
         range = "A" + nextRow;
         writecell(row, filename, "Sheet", sheet, "Range", range);
     end 
-
+    
     funcOut.analyVar = analyVar;
     funcOut.indivDataset = indivDataset;
     funcOut.avgDataset = avgDataset;
 end
+
 
 function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
 

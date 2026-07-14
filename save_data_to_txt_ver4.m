@@ -14,7 +14,8 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
     use_COM = 0;
     
     indVarField = {'imagevcoAtom'};
-    depVarField = {'sfiIntegral', 'sfiIntegral_roi1_ratio', 'sfiIntegral_roi2_ratio', 'sfiIntegral_roi1', 'sfiIntegral_roi2'};
+    depVarField = {'sfiIntegral'};
+    %depVarField = {'sfiIntegral', 'sfiIntegral_roi1_ratio', 'sfiIntegral_roi2_ratio', 'sfiIntegral_roi1', 'sfiIntegral_roi2'};
     %depVarField = {'wavemeterAtom', 'wavemeterBack'};
     
     %{

@@ -8,7 +8,7 @@ function funcOut = zeeman_sfi_triple_lorentzian(analyVar, indivDataset, avgDatas
     form = @(coeffs,x) ...
     coeffs(1)*(coeffs(4) ./ ((x-(coeffs(8)-coeffs(7))).^2 + coeffs(4)^2)) + ...
     coeffs(2)*(coeffs(5) ./ ((x-coeffs(8)).^2 + coeffs(5)^2)) + ...
-    coeffs(3)*(coeffs(6) ./ ((x-(coeffs(8)+coeffs(7))).^2 + coeffs(6)^2)) + ...
+    coeffs(3)*(coeffs(6) ./ ((x-(coeffs(8)+1*coeffs(7))).^2 + coeffs(6)^2)) + ...
     coeffs(9);
 
     indVarField = 'imagevcoAtom';
@@ -27,29 +27,29 @@ function funcOut = zeeman_sfi_triple_lorentzian(analyVar, indivDataset, avgDatas
         y2 = y - bg;
         %Center Peak
         %x0 = sum(x.*y2)/sum(y2);
-        %x0 = 21316.9;
-        x0 = 20193.6;
+        x0 = 17570.5;
+        %x0 = 235.4;
         %other peak locations        %sort x values in ascending order for scans that are backwards
         [xs, idx] = sort(x);
         ys = y2(idx);
-        [pks, locs] = findpeaks(ys, xs, ...
-            'MinPeakProminence', 0.1*max(y2), ...
-            'SortStr','descend');
-        locs = sort(locs(1:3));
+        %[pks, locs] = findpeaks(ys, xs, ...
+        %    'MinPeakProminence', 0.1*max(y2), ...
+        %    'SortStr','descend');
+        %locs = sort(locs(1:3));
         %Delta = mean([x0 - locs(1), locs(3) - x0]);
-        Delta = 3.6;
+        Delta = 0.1;
         disp(Delta)
         %Amplitudes
         A1 = interp1(x,y2,x0,'linear','extrap');
      
-        A1 = 0.06;
+        A1 = 0.1;
         A0 = interp1(x,y2,x0-Delta,'linear','extrap');
-        A0 = 0.035;
+        A0 = 0.1;
         A2 = interp1(x,y2,x0+Delta,'linear','extrap');
-        A2 = 0.025;
+        A2 = 0.1;
         %Widths
-        sigma_est = sqrt(abs(sum((x-x0).^2 .* abs(y2)) / abs(sum(y2))));
-        sigma_est = 0.3;
+        %sigma_est = sqrt(abs(sum((x-x0).^2 .* abs(y2)) / abs(sum(y2))));
+        sigma_est = 0.4;
         %sigma_est = (max(x) - min(x)) / 20;
         x0 = [
             A0
@@ -230,6 +230,8 @@ function an = myAnnotate(coeffs, err, coeffNames, coeffUnits)
     %%% adding line integral string.
     strs{i+1} = [newline,'PurityPiRatio', ': ', num2str(purityRatio)];
     strs{i+2} = [newline,'Purity Error', ': ', num2str(purityError)];
+
+    strs{i+3} = [newline,'Center Freq Error : ', num2str(err(8))];
 
     
     an = annotation('textbox', dim, 'String', strjoin(strs),...

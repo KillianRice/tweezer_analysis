@@ -27,8 +27,8 @@ for basenameNum = 1:analyVar.numBasenamesAtom
     % Reference variables in structure by shorter names for convenience
     % (will not create copy in memory as long as the vectors are not modified)
     indVar    = analyVar.funcDataScale(indivDataset{basenameNum}.imagevcoAtom);
-    CloudRadX = indivDataset{basenameNum}.cloudRadX(1,:);
-    CloudRadY = indivDataset{basenameNum}.cloudRadY(1,:);
+    CloudRadX = indivDataset{basenameNum}.cloudRadX(1,:)
+    CloudRadY = indivDataset{basenameNum}.cloudRadY(1,:)
     
 %% Plot of radius in X & Y
 %%%%%%%-----------------------------------%%%%%%%%%%
