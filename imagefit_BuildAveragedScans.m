@@ -19,16 +19,18 @@ fprintf('\nBuilding averaged OD images across matching scans...\n');
 load(fullfile(analyVar.analyOutDir,'tweezerROI.mat'),'tweezerROI');
 numTweezers = size(tweezerROI.centersXY,1);
 
-% From each individual file in indivDatset, Collect all:
-% scanned parameter values (Or Dummy Scan file ID)
-% OD images
-% Total OD Counts
+% From each individual file in indivDatset, Collect all values into a single list
+% to scan over later when creating the properly averaged lists:
+%   scanned parameter values (Or Dummy Scan file ID)
+%   OD images
+%   Total OD Counts
 allParamVals    = [];
 allTweezerNums  = [];
 allImages       = {};
 allSources      = {};
 allODFiles      = {};
 allTotODCounts  = [];
+allTotODCountsImg1Raw = [];
 
 allBasenameNums = [];
 allImageNums    = [];
@@ -60,32 +62,10 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             allODFiles{end+1,1}      = odFile;
             allBasenameNums(end+1,1) = basenameNum;
             allImageNums(end+1,1)    = k;
-            allTotODCounts(end+1,1) = indivDataset{basenameNum}.OD_TotalCounts(k,tweezerNum);
+            allTotODCounts(end+1,1) = indivDataset{basenameNum}.OD_TotalCounts(k,tweezerNum);                   % PCA Bkg Subtracted Counts (May be normalized if toggled)
+            allTotODCountsImg1Raw(end+1,1) = indivDataset{basenameNum}.OD_TotalCountsImg1Raw(k,tweezerNum);     % Raw Counts
         end
     end
-end
-
-%% Tweezer normalization factors
-if isfield(analyVar,'NormalizeTweezers') && analyVar.NormalizeTweezers == 1
-
-    tweezerMeanCounts = zeros(numTweezers,1);
-
-    for tweezerNum = 1:numTweezers
-        idxT = allTweezerNums == tweezerNum;
-        tweezerMeanCounts(tweezerNum) = mean(allTotODCounts(idxT), 'omitnan');
-    end
-
-    globalMeanCounts = mean(tweezerMeanCounts, 'omitnan');
-
-    tweezerNormFactors = tweezerMeanCounts ./ globalMeanCounts;
-
-    % Avoid divide-by-zero
-    tweezerNormFactors(tweezerNormFactors == 0 | isnan(tweezerNormFactors)) = 1;
-
-else
-
-    tweezerNormFactors = ones(numTweezers,1);
-
 end
 
 % Group by parameter value
@@ -156,9 +136,9 @@ for p = 1:numel(uniqueVals)
         for n = 1:numel(idx)                  %%%%%%%%%%%%%%
 
             thisTweezer = allTweezerNums(idx(n));
-            normFactor  = tweezerNormFactors(thisTweezer);
+            %normFactor  = tweezerNormFactors(thisTweezer);
         
-            imgStack(:,:,n) = allImages{idx(n)} ./ normFactor;
+            imgStack(:,:,n) = allImages{idx(n)};% ./ normFactor;
         
         end
         
@@ -172,7 +152,7 @@ for p = 1:numel(uniqueVals)
         
         for n = 1:numel(idx)
             thisTweezer = allTweezerNums(idx(n));
-            normCounts(n) = rawCounts(n) ./ tweezerNormFactors(thisTweezer);
+            normCounts(n) = rawCounts(n);% ./ tweezerNormFactors(thisTweezer);
         end
 
         % Representative true parameter value before rounding/grouping
@@ -218,7 +198,7 @@ for p = 1:numel(uniqueVals)
         sourceInfo.rawODCounts = rawCounts; %%%%%%%%%
         sourceInfo.normODCounts = normCounts;
         sourceInfo.totODCounts = normCounts;
-        sourceInfo.tweezerNormFactors = tweezerNormFactors(allTweezerNums(idx)); %%%%%%%%%%%
+        %sourceInfo.tweezerNormFactors = tweezerNormFactors(allTweezerNums(idx)); %%%%%%%%%%%
 
         avgDataset.sourceInfo{avgCounter,1} = sourceInfo;
 
@@ -240,71 +220,9 @@ for p = 1:numel(uniqueVals)
 end
 
 avgDataset.NormalizeTweezers = analyVar.NormalizeTweezers;
-avgDataset.tweezerNormFactors = tweezerNormFactors;
-avgDataset.tweezerMeanCounts = tweezerMeanCounts;
+% avgDataset.tweezerNormFactors = tweezerNormFactors;
+% avgDataset.tweezerMeanCounts = tweezerMeanCounts;
 
 fprintf('Averaged OD images completed. Created %d averaged entries.\n\n', avgCounter);
 
 end
-
-% avgDataset = struct;
-% avgDataset.avgDir = avgDir;
-% avgDataset.roiWin_Index = indivDataset{1}.roiWin_Index;
-% avgDataset.imagevcoAtom = uniqueVals;
-% avgDataset.CounterAtom = numel(uniqueVals);
-% avgDataset.avgODFiles = cell(numel(uniqueVals),1);
-% avgDataset.sourceFiles = cell(numel(uniqueVals),1);
-% avgDataset.totODCounts = cell(numel(uniqueVals),1);
-% 
-% avgCounter = 0;
-% 
-% for p = 1:numel(uniqueVals)
-% 
-%     for tweezerNum = 1:numTweezers
-% 
-%         idx = find(allParamVals == uniqueVals(p) & ...
-%                    allTweezerNums == tweezerNum);
-% 
-%         if isempty(idx)
-%             continue;
-%         end
-% 
-%         avgCounter = avgCounter + 1;
-% 
-%         imgStack = [];
-% 
-%         for n = 1:numel(idx)
-%             imgStack(:,:,n) = allImages{idx(n)};
-%         end
-% 
-%         avgOD = mean(imgStack,3,'omitnan');
-% 
-%         avgDataset.paramVals(avgCounter,1) = uniqueVals(p);
-%         avgDataset.tweezerNums(avgCounter,1) = tweezerNum;
-%         avgDataset.avgODImages{avgCounter} = avgOD;
-% 
-%         safeVal = regexprep(num2str(uniqueVals(p),'%.12g'), ...
-%             '[^a-zA-Z0-9_\-\.]', '_');
-% 
-%         avgFile = fullfile(avgDataset.avgDir, ...
-%             sprintf('AvgOD_%s_%s_Tweezer%03d.txt', ...
-%             analyVar.avgScanParamField, safeVal, tweezerNum));
-% 
-%         dlmwrite(avgFile, avgOD, '\t');
-% 
-%         avgDataset.avgODFiles{avgCounter} = avgFile;
-%     end
-% 
-%     fprintf('Averaged parameter value %g using %d images\n', uniqueVals(p), numel(idx));
-% end
-% 
-% 
-% %save(fullfile(avgDir,'avgDataset.mat'),'avgDataset');
-% 
-% avgDataset.CounterAtom = avgCounter;
-% avgDataset.numTweezers = numTweezers;
-% avgDataset.TweezerROI = tweezerROI;
-% 
-% fprintf('Averaged OD images completed.\n\n');
-% 
-% end

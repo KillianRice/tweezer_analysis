@@ -55,15 +55,30 @@ fprintf('\nEvaluating averaged fit parameters...\n');
 
 %% Modify indivDataset cell to contain fit coefficients and OD image
 if analyVar.UseImages
-    avgDataset = add_fit_avg_batch(analyVar,avgDataset);
+
+    %% Plot averaged Tweezer ROI counts for each individual spot
+    if analyVar.plotIndivTwzrCounts
+        create_plot_IndivTwzr_AveragedCounts(analyVar, indivDataset, avgDataset, analyVar.plotRawCounts)
+    end
+
+    %% Plot Images of the Data
+    if analyVar.fitODImage
+        avgDataset = add_fit_avg_batch(analyVar,avgDataset);
+    end
+
+    if analyVar.plotRawImage
+        create_plot_image_sets_ROI(analyVar, indivDataset)
+    end
 
     %% Number Distribution Fit Evaluation
     if analyVar.plotFitEval
         % Plot cloud evolution
-        evolAxH = create_plot_evol_avg(analyVar,avgDataset); 
+        create_plot_evol_avg(analyVar,avgDataset); 
         % Plot 2D fit, 1D cross section, and residuals for averaged data
-        [fit2DAxH, fit1DAxH, resAxH] = ...
-        create_plot_fitEval_Averaged(analyVar, avgDataset);
+        if analyVar.fitODImage
+            [fit2DAxH, fit1DAxH, resAxH] = ...
+                create_plot_fitEval_Averaged(analyVar, avgDataset);
+        end
 
         %  % Standardize color limits across averaged scan
         % climMat = get_axes_prop_matrix(fit2DAxH, 'CLim');
@@ -78,6 +93,12 @@ if analyVar.UseImages
         %  set(fit1DAxH(isgraphics(fit1DAxH)), 'YLim', best1DLim);
     
     end
+
+    %% Plot averaged Tweezer ROI counts for each individual spot
+    if analyVar.plotIndivTwzrCounts
+        create_plot_IndivTwzr_AveragedCounts(analyVar, indivDataset, avgDataset, analyVar.plotRawCounts)
+    end
+
 
     if analyVar.plotSize
         % Cloud Size - X & Y saved to avgDataset

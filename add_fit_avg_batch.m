@@ -9,11 +9,11 @@ function avgDataset = add_fit_avg_batch(analyVar, avgDataset)
 %% Preallocate
 [avgDataset.All_OD_Image, ...
  avgDataset.All_PCell, ...
- avgDataset.All_fitParams] = deal(cell(1, avgDataset.CounterAtom));
+ avgDataset.All_fitParams] = deal(cell(1, avgDataset.tweezerAllImageFit.numTweezers));
 
 %% Rebuild paramFitFiles if missing
 if ~isfield(avgDataset,'paramFitFiles')
-    avgDataset.paramFitFiles = cell(avgDataset.CounterAtom,1);
+    avgDataset.paramFitFiles = cell(avgDataset.tweezerAllImageFit.numTweezers,1);
 
     for j = 1:avgDataset.CounterAtom
         safeVal = regexprep(num2str(avgDataset.imagevcoAtom(ceil(j/avgDataset.numTweezers)),'%.12g'), ...
@@ -27,21 +27,21 @@ if ~isfield(avgDataset,'paramFitFiles')
 end
 
 %% SubPlot Info (sizing)
-[avgDataset.SubPlotRows, avgDataset.SubPlotCols] = optiSubPlotNum(avgDataset.CounterAtom);
+[avgDataset.SubPlotRows, avgDataset.SubPlotCols] = optiSubPlotNum(avgDataset.tweezerAllImageFit.numTweezers);
 
 %% Loop through averaged images
-for j = 1:avgDataset.CounterAtom
+for j = 1:avgDataset.tweezerAllImageFit.numTweezers
 
     %% Read averaged OD image
     if exist(avgDataset.avgODFiles{j}, 'file')
-        avgDataset.All_OD_Image{j} = dlmread(avgDataset.avgODFiles{j});
+        avgDataset.avgODImages{j} = dlmread(avgDataset.avgODFiles{j});
     else
         error('imagefit:NoAvgODSaved', ...
             'Cannot load averaged OD image:\n%s', avgDataset.avgODFiles{j});
     end
 
     %% Read averaged fit parameters
-    fitFile = avgDataset.paramFitFiles{j};
+    fitFile = avgDataset.tweezerAllImageFit.paramFitFiles{j};
 
     if exist(fitFile, 'file')
 
@@ -61,7 +61,7 @@ for j = 1:avgDataset.CounterAtom
                 num2cell(P(1:length(analyVar.InitCondList))), ...
                 analyVar.InitCondList, ...
                 2), ...
-            avgDataset.All_PCell{j}, ...
+            avgDataset.tweezerAllImageFit.PCell{j}, ...
             'UniformOutput', 0);
 
     else

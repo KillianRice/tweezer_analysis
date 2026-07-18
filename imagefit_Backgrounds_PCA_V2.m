@@ -4,7 +4,7 @@ function imagefit_Backgrounds_PCA_V2(varargin)
 %
 % INPUTS:
 %   varargin - variable input argument to allow passing of analysis
-%              variables from BEC_Analysis_Runner. If not passed, the
+%              variables from Analysis_Runner. If not passed, the
 %              program will call AnalysisData and get_indiv_batch_data itself.
 %              It is important to follow the input construction below for
 %              varargin to retrieve variable data from other programs.
@@ -59,46 +59,52 @@ end
 %% Loop through each batch file listed in analyVar.basenamevectorAtom
 for basenameNum = 1:analyVar.numBasenamesAtom
     % this will keep track of all the files analyzed in all the batches
-    fprintf('\nBackground fitting batch file %g of %g\n',basenameNum,analyVar.numBasenamesAtom)
+    %fprintf('\nBackground fitting batch file %g of %g\n',basenameNum,analyVar.numBasenamesAtom)
+    fprintf('\nSaving Image batch file %g of %g\n',basenameNum,analyVar.numBasenamesAtom)
     
 %% Approximation of orthogonal background basis using PCA
 %%%%%%%-----------------------------------%%%%%%%%%%
-    % Using background images to find orthogonal basis to approximate cloud background
-    % Compute principal components from background images
-    [pcCoeffs, pcBasis, pcEigenVals] =  pca(indivDataset{basenameNum}.BackgroundNotCloud);%princomp(indivDataset{basenameNum}.BackgroundNotCloud);
-    if length(pcEigenVals) > analyVar.dimReduceLim
-        % find number of vectors with cumulative variance set in AnalysisVariables )varianceLim)
-        varLim = length(nonzeros(cumsum(pcEigenVals./sum(pcEigenVals)) <= analyVar.varianceLim));
-    else
-        varLim = length(pcEigenVals); % If less than dimensional reduction limit then use all states
-    end
+    
+    %%% undo to go back to fitting bkg
+    %   % Using background images to find orthogonal basis to approximate cloud background
+    %   % Compute principal components from background images
+    %   [pcCoeffs, pcBasis, pcEigenVals] =  pca(indivDataset{basenameNum}.BackgroundNotCloud);%princomp(indivDataset{basenameNum}.BackgroundNotCloud);
+    %   if length(pcEigenVals) > analyVar.dimReduceLim
+    %       % find number of vectors with cumulative variance set in AnalysisVariables )varianceLim)
+    %       varLim = length(nonzeros(cumsum(pcEigenVals./sum(pcEigenVals)) <= analyVar.varianceLim));
+    %   else
+    %       varLim = length(pcEigenVals); % If less than dimensional reduction limit then use all states
+    %   end
     
 %% Loop through each image and find background state
 %%%%%%%-----------------------------------%%%%%%%%%%
     % this loop fits the background for all atom files in this dataset
     parfor k = 1:indivDataset{basenameNum}.CounterAtom  
-        % take the inital conditions of the nth image as the projection onto the pcBasis
-        %InitialCondition = pcCoeffs(k,1:varLim);
-        InitialCondition = zeros(1,varLim);
         
-        % Minimize the nth state in the original basis to the new pcBasis
-        A  = fminunc(@(A) WeightedBackgroundFunction(A,...
-            indivDataset{basenameNum}.AtomsNotCloud(:,k) - mean(indivDataset{basenameNum}.AtomsNotCloud(:,k)),...
-            pcBasis(:,1:varLim)),InitialCondition,optimOptions);
-
-        % Coefficients define how to transform original basis into pcBasis
-        % Need BackCloud in PCA basis to construct the nth image background in
-        % terms of the PCA basis of the cloud background
-        pcBGCloud = (pcCoeffs(:,1:varLim)'*indivDataset{basenameNum}.BackgroundCloud')';
-        % Construct linear approximation of cloud background using PCA basis of not cloud backgrounds
-        BackCloudApproxState = sum(bsxfun(@times,pcBGCloud,A),2);
+        %%% undo to go back to fitting bkg
+        %   % take the inital conditions of the nth image as the projection onto the pcBasis
+        %   %InitialCondition = pcCoeffs(k,1:varLim);
+        %   InitialCondition = zeros(1,varLim);
+        %   
+        %   % Minimize the nth state in the original basis to the new pcBasis
+        %   A  = fminunc(@(A) WeightedBackgroundFunction(A,...
+        %       indivDataset{basenameNum}.AtomsNotCloud(:,k) - mean(indivDataset{basenameNum}.AtomsNotCloud(:,k)),...
+        %       pcBasis(:,1:varLim)),InitialCondition,optimOptions);
+%   
+        %   % Coefficients define how to transform original basis into pcBasis
+        %   % Need BackCloud in PCA basis to construct the nth image background in
+        %   % terms of the PCA basis of the cloud background
+        %   pcBGCloud = (pcCoeffs(:,1:varLim)'*indivDataset{basenameNum}.BackgroundCloud')';
+        %   % Construct linear approximation of cloud background using PCA basis of not cloud backgrounds
+        %   BackCloudApproxState = sum(bsxfun(@times,pcBGCloud,A),2);
 
 %% Create optical depth (OD) image
 %%%%%%%-----------------------------------%%%%%%%%%%
         % Retrieve cloud matrix for single image
         roiImageAtom = reshape(indivDataset{basenameNum}.AtomsCloud(:,k),[1 1].*(2*analyVar.roiWinRadAtom(basenameNum) + 1));
-        roiImageBack = reshape(BackCloudApproxState, size(roiImageAtom));
-        
+        %   roiImageBack = reshape(BackCloudApproxState, size(roiImageAtom)); undo to go back to fitting bkg
+        roiImageBack = reshape(indivDataset{basenameNum}.AtomsCloud(:,k),[1 1].*(2*analyVar.roiWinRadAtom(basenameNum) + 1));
+
         % Bin and trim atoms images
         cutImageCell = TrimAndBin(analyVar,mat2cell([roiImageAtom;roiImageBack],[1 1]*size(roiImageAtom,1),size(roiImageAtom,2)));
         [cutImageAtom, cutImageBack] = cutImageCell{:};
@@ -108,19 +114,16 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             disp('Absorption Images')
             OD_Image_Single = (log(abs(cutImageBack)) - log(abs(cutImageAtom)));
         end
-        % if analyVar.UseImages_Fluorescence == 1
-        %     disp('Fluorescence Images: Fitting Raw intensities')
-        %     OD_Image_Single = (abs(cutImageAtom)); 
-        % end
         %% Subtract a fitted background
         if analyVar.UseImages_Fluorescence == 1
-            disp('Fluorescence Images: subtracting fitted PCA background')
+            %disp('Fluorescence Images: subtracting fitted PCA background')
         
-            OD_Image_Single = cutImageAtom
+            %OD_Image_Single = cutImageAtom - cutImageBack;
+            OD_Image_Single = cutImageAtom %%% undo to go back to fitting
        
             % Subtract fitted bkg
-            bgOffset = estimate_corner_background(OD_Image_Single, analyVar.NoiseNumVec);
-            OD_Image_Single = OD_Image_Single - bgOffset;
+            % bgOffset = estimate_corner_background(OD_Image_Single, analyVar.NoiseNumVec);
+            % OD_Image_Single = OD_Image_Single - bgOffset;
         
             % Optional: clip negative values after subtraction
             if isfield(analyVar,'FluorescenceClipNegative') && ...
@@ -142,29 +145,42 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                 y0 = tweezerROI.centersXY(tweezerNum,2); %column
                 r  = tweezerROI.roiHalfWidthPix;
         
+                % Get ROI cut from image - bkg image
                 OD_Tweezer = OD_Image_Single(x0-r:x0+r, ...
                                              y0-r:y0+r);
+                RawAtomImage_Tweezer = cutImageAtom(x0-r:x0+r, ...
+                                             y0-r:y0+r);
+
 
                 if isempty(OD_Tweezer)
                     error('Empty tweezer OD crop for tweezer %d.', tweezerNum);
                 end
-        
+                
+                % Save tweezer ROI bkg subtracted image
                 saveName = [analyVar.analyOutDir ...
                     char(indivDataset{basenameNum}.fileAtom(k)) ...
                     sprintf('_Tweezer%03d',tweezerNum) ...
                     analyVar.ODimageFilename];
                     
                 dlmwrite(saveName, OD_Tweezer, '\t');
+
+                % Save tweezer ROI raw atom image (image 1)
+                saveName = [analyVar.analyOutDir ...
+                    char(indivDataset{basenameNum}.fileAtom(k)) ...
+                    sprintf('_TweezerImg1Raw%03d',tweezerNum) ...
+                    analyVar.ODimageFilename];
+                
+                dlmwrite(saveName, RawAtomImage_Tweezer, '\t');
+
             end
-        
-        else
-        
-            %% Save OD Single Image 
-            dlmwrite([analyVar.analyOutDir ...
-                char(indivDataset{basenameNum}.fileAtom(k)) ...
-                analyVar.ODimageFilename], OD_Image_Single, '\t');
-        
         end
+
+        
+        %% Save OD Single Image 
+        dlmwrite([analyVar.analyOutDir ...
+            char(indivDataset{basenameNum}.fileAtom(k)) ...
+            analyVar.ODimageFilename], OD_Image_Single, '\t');
+        
 
         
     end %loop through files in dataset (one batchfile)
@@ -175,5 +191,6 @@ warning('on','all') %% Reenable warnings
 
 %% Wrap Up
 fclose('all'); % Close any file handles which may be open
-fprintf('The background fitting is completed.\n\n')
+% fprintf('The background fitting is completed.\n\n')
+fprintf('Saving is completed.\n\n')
 end

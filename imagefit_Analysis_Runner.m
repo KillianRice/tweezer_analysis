@@ -22,7 +22,7 @@ end
 indivDataset = get_indiv_batch_data(analyVar);
 
 if analyVar.UseTweezer == 1
-    % 1. Still make/save individual OD images
+    % 1. make/save individual OD images and Raw ROI cuts
     imagefit_Backgrounds_PCA_V2(analyVar, indivDataset);
 
     % 2. Grab OD Total Counts for Histograms
@@ -31,8 +31,10 @@ if analyVar.UseTweezer == 1
     % 3. Average matching scan points across scans
     avgDataset = imagefit_BuildAveragedScans(analyVar, indivDataset);
     
-    % 4. Fit averaged OD images only
-    imagefit_NumDistFit_Averaged(analyVar, indivDataset, avgDataset);
+    % 4. Fit averaged OD images only (not really working for small images)
+    if analyVar.fitODImage
+        avgDataset = imagefit_NumDistFit_Averaged(analyVar, indivDataset, avgDataset);
+    end
     
     % 5. Evaluate averaged fits
     if analyVar.SavePlotData == 1

@@ -86,7 +86,7 @@ roiSideLength = 2*analyVar.roiWinRadAtom(basenameNum) + 1;
 [roiCutImage, roi_Index] = deal(zeros(roiSideLength));
 
 roi_Index(:)   = indivDataset{basenameNum}.image_Index(indivDataset{basenameNum}.image_Index ~= 0);
-roiCutImage(:) = prelimRawAtoms(indivDataset{basenameNum}.image_Index ~= 0);
+roiCutImage(:) = avgPrelimRawAtoms(indivDataset{basenameNum}.image_Index ~= 0);
 
 Xpix = (-analyVar.roiWinRadAtom(basenameNum):analyVar.roiWinRadAtom(basenameNum)) ...
     + analyVar.cloudColCntrAtom(1);

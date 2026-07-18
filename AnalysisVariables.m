@@ -115,11 +115,13 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'sfi_quad_gaussian',...             %68 Fit a quadruple gaussian to the integrated SFI signal
                     'zeeman_sfi_triple_lorentzian',...  %69 Fit a zeeman triple gaussian to the integrated SFI signal 
                     'zeeman_sfi_quintuple_lorentzian'...%70 Fit a zeeman quintuple gaussian to the integrated SFI signal 
+
                     };
 
-plugInVec = [22,27,36,39];
-%plugInVec = [22,37,38,69];
+plugInVec = [39];
+%plugInVec = [22,23,37,38,69];
 %plugInVec = [22,36,35];
+%plugInVec = [27,39];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -132,20 +134,25 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
-UseImages = 0;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
+UseImages = 1;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
 UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
-UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
+UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 CameraType = 1; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
-UseTweezer = 0; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
-dummyScan = 0; %(doesnt work yet)%Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
+UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
+dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
 avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
 avgScanParam = '689 Frequency'; % What is the given name of that parameter
 avgOutSubDir = 'AveragedFits/';
-plotHistogram = 1;
-NormalizeTweezers = 1;
+plotHistogram = 0;
+NormalizeTweezers = 0;
+fitODImage = 1;
+plotIndivTwzrCounts = 1; plotRawCounts = 1;
+plotRawImage  = 0;             % Processed raw images
+AveragedFitMode = 'allImagesByTweezer';   % 'scanParameter' or 'allImagesByTweezer'
+
 
 analyVar.FluorescenceRemoveCornerOffset = 0;
 analyVar.FluorescenceClipNegative = 1;
@@ -168,7 +175,7 @@ end
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -176,7 +183,6 @@ plotFitLine   = 1; % Boolean to extract higher order parameters by fitting insta
 %% ADDITIONAL PLOTTING VARIABLES
 %%-----------------------------------------------------------------------%%
 % Target specific plotting flags (all flags are booleans)
-plotRawImage  = 0;             % Processed raw images (trimmed and binned) - needs implementation
 
 plotNum       = plotInstParam; % Number in each image
 plotMeanNum   = plotMeanParam; % Mean number averaged across similar scans
@@ -205,9 +211,9 @@ plotAmp      = 0; % Cloud amplitude of each image (2025)
 %roi2_minimum = 87;
 %roi2_maximum = 104;
 
-roi1_minimum = 40; 
-roi1_maximum = 45; 
-roi2_minimum = 46; 
+roi1_minimum = 10; 
+roi1_maximum = 34; 
+roi2_minimum = 35; 
 roi2_maximum = 52; 
 
  
@@ -425,6 +431,7 @@ figNum.fig2DFit = 1100;
 figNum.figRes   = 1200;
 figNum.fig1DFit = 1300;
 figNum.fig1DBEC = 1400;
+figNum.avgODImages = 1050;
 figNum.atomNum  = 2000;  figNum.meanNum  = 12000;
 figNum.condNum  = 2100;  figNum.meanBEC  = 12100;
 figNum.condFrac = 2200;  figNum.meanFrac = 12200;
