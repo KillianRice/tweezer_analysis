@@ -79,25 +79,9 @@ if analyVar.UseImages
             [fit2DAxH, fit1DAxH, resAxH] = ...
                 create_plot_fitEval_Averaged(analyVar, avgDataset);
         end
-
-        %  % Standardize color limits across averaged scan
-        % climMat = get_axes_prop_matrix(fit2DAxH, 'CLim');
-        % ylimMat = get_axes_prop_matrix(fit1DAxH, 'YLim');
-        % 
-        % bestColorLim = [min(climMat(:,1)), max(climMat(:,2))];
-        % best1DLim    = [-0.1, max(ylimMat(:,2))];
-   % 
-        %  set(evolAxH,'CLim', bestColorLim)  % apply color lim to evolution
-        %  set(fit2DAxH(isgraphics(fit2DAxH)), 'CLim', bestColorLim);
-        %  set(resAxH(isgraphics(resAxH)),     'CLim', bestColorLim);
-        %  set(fit1DAxH(isgraphics(fit1DAxH)), 'YLim', best1DLim);
     
     end
 
-    %% Plot averaged Tweezer ROI counts for each individual spot
-    if analyVar.plotIndivTwzrCounts
-        create_plot_IndivTwzr_AveragedCounts(analyVar, indivDataset, avgDataset, analyVar.plotRawCounts)
-    end
 
 
     if analyVar.plotSize

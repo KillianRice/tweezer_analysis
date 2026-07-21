@@ -13,9 +13,11 @@
 %%%% N is the number of measurements per channel. This estimates the worst
 %%%% case mean where you have a 95% chance of measure zero N times.
 
-function [ x,y,yerr ] = get_averages( analyVar, indivDataset, avgDataset, indVarField, depVarField, weighting )
+%%%%Updated 20206.07.17 - added option to grab separate tweezer spots data
 
-    [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
+function [ x,y,yerr ] = get_averages( analyVar, indivDataset, avgDataset, indVarField, depVarField, weighting, tweezerNum )
+
+    [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset, tweezerNum);
     
     scanIDs = analyVar.uniqScanList;
     x = cell(length(scanIDs));

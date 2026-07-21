@@ -115,8 +115,13 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                     legend(num2str(analyVar.timevectorAtom(i)));
                     set(gca, 'YScale', yAxisScale);
                     set(gca, 'XScale', xAxisScale);
-                    title(strcat([fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' \nu = ',...
-                        num2str(length(ydata{i})-length(coeffs{i}))]));
+                    if analyVar.UseTweezer
+                        title(strcat([fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' A\nu = ',...
+                            num2str(length(ydata{i})-length(coeffs{i})), ' Tweezer ROI: ', tweezerNum]));
+                    else
+                        title(strcat([fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' \nu = ',...
+                            num2str(length(ydata{i})-length(coeffs{i}))]));
+                    end
                 hold off
             end
         

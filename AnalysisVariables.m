@@ -118,10 +118,10 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
 
                     };
 
-plugInVec = [39];
+%plugInVec = [36];
 %plugInVec = [22,23,37,38,69];
 %plugInVec = [22,36,35];
-%plugInVec = [27,39];
+plugInVec = [27,39];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -152,6 +152,7 @@ fitODImage = 1;
 plotIndivTwzrCounts = 1; plotRawCounts = 1;
 plotRawImage  = 0;             % Processed raw images
 AveragedFitMode = 'allImagesByTweezer';   % 'scanParameter' or 'allImagesByTweezer'
+numFakeTweezers1 = 4; numFakeTweezers2 = 4;  % In check_tweezer_pnts how many ROIs (at the end) where non-tweezers %1 is within RMOT 2 is far from RMOT
 
 
 analyVar.FluorescenceRemoveCornerOffset = 0;

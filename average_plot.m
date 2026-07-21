@@ -11,8 +11,8 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     %depVarField = 'numberAtom';
     %depVarField = 'winTotNum';
     %depVarField = 'cntrX';
-    depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
-    %depVarField = 'OD_TotalCounts';
+    %depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'OD_TotalCounts';
     
     %[xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     %[xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);

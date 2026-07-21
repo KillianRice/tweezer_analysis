@@ -5,7 +5,7 @@ function funcOut = avg_num_and_temp(analyVar, indivDataset, avgDataset)
         tempXfield = 'atomTempX';
         tempYfield = 'atomTempY';
     else
-        numfield = 'sfiIntegral';
+        numfield = 'numberAtom';
         tempXfield = 'tempXAtom';
         tempYfield = 'tempYAtom';
     end
