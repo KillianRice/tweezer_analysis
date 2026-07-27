@@ -1,641 +1,703 @@
-function create_plot_IndivTwzr_AveragedCounts(analyVar, indivDataset, avgDataset, plotRawCounts)
-    %%% average_plot.m - Joe Whalen 2017.12.15
-    %%% Make a plot of the average of any quantity in indivDataset grouped
-    %%% by the flags in the master batch file.
-    
-    indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    if plotRawCounts
-        depVarField = 'OD_TotalCountsImg1Raw';
-    else
-        depVarField = 'OD_TotalCounts';  % The field of an indivdataset that is to be plotted on the y axis
+function create_plot_IndivTwzr_AveragedCounts( ...
+    analyVar, indivDataset, avgDataset, plotRawCounts)
+
+% Plot individually averaged ROI signals and averages over ROI groups.
+%
+% ROI ordering:
+%   1 : numRealTweezers              Real tweezers
+%   Following ROIs                   Non-tweezer section 1
+%   Final ROIs                       Non-tweezer section 2
+%
+% For an unweighted mean of N ROI values, m_i, with uncertainties s_i:
+%
+%   meanValue = mean(m_i)
+%
+%   propagatedError = sqrt(sum(s_i.^2))/N
+%
+% The final error also includes the observed spread between ROI means:
+%
+%   scatterError = std(m_i)/sqrt(N)
+%
+%   totalError = sqrt(propagatedError^2 + scatterError^2)
+
+
+%% Select variables
+
+indVarField = 'imagevcoAtom';
+
+if plotRawCounts
+    depVarField = 'OD_TotalCountsImg1Raw';
+else
+    depVarField = 'OD_TotalCounts';
+end
+
+[xdataClean, ydataClean] = getxy( ...
+    indVarField, ...
+    depVarField, ...
+    analyVar, ...
+    indivDataset, ...
+    avgDataset);
+
+scanIDs = analyVar.uniqScanList(:);
+numScanIDs = numel(scanIDs);
+
+
+%% Determine number of ROIs
+
+roiFile = fullfile( ...
+    analyVar.analyOutDir, ...
+    'tweezerROI.mat');
+
+roiData = load(roiFile,'tweezerROI');
+tweezerROI = roiData.tweezerROI;
+
+numROIs = size(tweezerROI.centersXY,1);
+
+
+%% Define ROI groups
+
+numNonTweezers1 = analyVar.numFakeTweezers1;
+numNonTweezers2 = analyVar.numFakeTweezers2;
+
+validateattributes( ...
+    numNonTweezers1, ...
+    {'numeric'}, ...
+    {'scalar','integer','nonnegative','finite'});
+
+validateattributes( ...
+    numNonTweezers2, ...
+    {'numeric'}, ...
+    {'scalar','integer','nonnegative','finite'});
+
+numRealTweezers = ...
+    numROIs - numNonTweezers1 - numNonTweezers2;
+
+if numRealTweezers < 1
+    error(['The requested non-tweezer groups leave no real ' ...
+           'tweezer ROIs.']);
+end
+
+realTweezerIndices = ...
+    1:numRealTweezers;
+
+nonTweezer1Indices = ...
+    (numRealTweezers + 1): ...
+    (numRealTweezers + numNonTweezers1);
+
+nonTweezer2Indices = ...
+    (numRealTweezers + numNonTweezers1 + 1): ...
+    numROIs;
+
+
+%% Preallocate results
+
+x = cell(numScanIDs,1);
+
+y = cell(numScanIDs,numROIs);
+yerr = cell(numScanIDs,numROIs);
+
+% Scalar mean of each complete ROI curve
+avgSignal = nan(numScanIDs,numROIs);
+avgSignalErr = nan(numScanIDs,numROIs);
+
+% Point-by-point group curves
+yTweezerMean = cell(numScanIDs,1);
+yTweezerErr = cell(numScanIDs,1);
+
+yNonTweezer1Mean = cell(numScanIDs,1);
+yNonTweezer1Err = cell(numScanIDs,1);
+
+yNonTweezer2Mean = cell(numScanIDs,1);
+yNonTweezer2Err = cell(numScanIDs,1);
+
+% Scalar group averages
+avgAllTweezers = nan(numScanIDs,1);
+avgAllTweezersErr = nan(numScanIDs,1);
+
+avgAllNonTweezers1 = nan(numScanIDs,1);
+avgAllNonTweezers1Err = nan(numScanIDs,1);
+
+avgAllNonTweezers2 = nan(numScanIDs,1);
+avgAllNonTweezers2Err = nan(numScanIDs,1);
+
+fprintf('Plotting individual tweezer counts.\n\n');
+
+
+%% Process each scan ID
+
+for id = 1:numScanIDs
+
+    %% Collect all x values for this scan ID
+
+    xAll = [];
+
+    for basename = 1:analyVar.numBasenamesAtom
+
+        if scanIDs(id) ~= analyVar.meanListVar(basename)
+            continue;
+        end
+
+        thisX = xdataClean{basename}(:);
+        xAll = [xAll; thisX]; %#ok<AGROW>
     end
-    
-    [xdata_clean, ydata_clean] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
-    scanIDs = analyVar.uniqScanList;
-    
-    %% Determine number of tweezers
-    load(fullfile(analyVar.analyOutDir,'tweezerROI.mat'),'tweezerROI');
-    numTweezers = size(tweezerROI.centersXY,1);
-    
-    %% Preallocate
-    numScanIDs = numel(scanIDs);
-    
-    x            = cell(numScanIDs,1);
-    y            = cell(numScanIDs,numTweezers);
-    yerr         = cell(numScanIDs,numTweezers);
-    
-    AvgSig       = nan(numScanIDs,numTweezers);
-    AvgSig_err   = nan(numScanIDs,numTweezers);
-    
-    yTweezerMean = cell(numScanIDs,1);
-    yTweezerErr  = cell(numScanIDs,1);
 
-    ynonTweezerMean = cell(numScanIDs,1);
-    ynonTweezerErr  = cell(numScanIDs,1);
-    
-    AvgAllTweezers     = nan(numScanIDs,1);
-    AvgAllTweezers_err = nan(numScanIDs,1);
-    
-    AvgAllNonTweezers     = nan(numScanIDs,1);
-    AvgAllNonTweezers_err = nan(numScanIDs,1);
+    if isempty(xAll)
+        warning( ...
+            'No data found for scan ID %g.', ...
+            scanIDs(id));
 
-    fprintf('Plotting Individual Tweezer Counts.\n\n')
-    
-    %% Average repeated scans separately for each tweezer
-    for id = 1:numScanIDs
-    
-        %% Collect all x values belonging to this scan ID
-        xAll = [];
-    
+        continue;
+    end
+
+    x{id} = unique(xAll,'sorted');
+    numX = numel(x{id});
+
+
+    %% Initialize ROI curves for this scan ID
+
+    for roiNum = 1:numROIs
+
+        y{id,roiNum} = nan(numX,1);
+        yerr{id,roiNum} = nan(numX,1);
+    end
+
+
+    %% Average repeated measurements at each x value
+
+    for xIndex = 1:numX
+
+        currentX = x{id}(xIndex);
+
+        valuesAtX = cell(1,numROIs);
+
         for basename = 1:analyVar.numBasenamesAtom
-    
+
             if scanIDs(id) ~= analyVar.meanListVar(basename)
                 continue;
             end
-    
-            xBase = xdata_clean{basename};
-            xBase = xBase(:);
-    
-            xAll = [xAll; xBase];
-        end
-    
-        % Unique sorted independent-variable values
-        x{id} = unique(xAll, 'sorted');
-    
-        numX = numel(x{id});
-    
-        for tweezerNum = 1:numTweezers
-            y{id,tweezerNum}    = nan(numX,1);
-            yerr{id,tweezerNum} = nan(numX,1);
-        end
-    
-        %% Loop through each independent-variable value
-        for i = 1:numX
-    
-            currentX = x{id}(i);
-    
-            % One collection vector per tweezer
-            valuesAtX = cell(1,numTweezers);
-    
-            %% Search every matching input file
-            for basename = 1:analyVar.numBasenamesAtom
-    
-                if scanIDs(id) ~= analyVar.meanListVar(basename)
-                    continue;
-                end
-    
-                xBase = xdata_clean{basename}(:);
-                yBase = ydata_clean{basename};
-    
-                if size(yBase,1) ~= numel(xBase)
-                    error(['Number of rows in ydata_clean{%d} does not match ' ...
-                           'the number of x values.'], basename);
-                end
-    
-                % Tolerance-based matching is safer than exact floating equality
-                xTol = max(1e-12, 1e-9*max(1,abs(currentX)));
-                matchingRows = find(abs(xBase-currentX) <= xTol);
-    
-                for rowNum = matchingRows(:)'
-    
-                    for tweezerNum = 1:min(numTweezers,size(yBase,2))
-    
-                        thisValue = yBase(rowNum,tweezerNum);
-    
-                        if ~isnan(thisValue)
-                            valuesAtX{tweezerNum}(end+1,1) = thisValue;
-                        end
+
+            xBase = xdataClean{basename}(:);
+            yBase = ydataClean{basename};
+
+            if size(yBase,1) ~= numel(xBase)
+                error(['The number of rows in ydataClean{%d} does not ' ...
+                       'match the number of corresponding x values.'], ...
+                    basename);
+            end
+
+            xTolerance = max( ...
+                1e-12, ...
+                1e-9*max(1,abs(currentX)));
+
+            matchingRows = find( ...
+                abs(xBase-currentX) <= xTolerance);
+
+            numAvailableROIs = min( ...
+                numROIs, ...
+                size(yBase,2));
+
+            for rowNum = matchingRows(:)'
+
+                for roiNum = 1:numAvailableROIs
+
+                    thisValue = yBase(rowNum,roiNum);
+
+                    if isfinite(thisValue)
+
+                        valuesAtX{roiNum}(end+1,1) = ...
+                            thisValue;
                     end
                 end
             end
-    
-            %% Average repeated-file values for each tweezer
-            for tweezerNum = 1:numTweezers
-    
-                vals = valuesAtX{tweezerNum};
-    
-                if isempty(vals)
-                    continue;
-                end
-    
-                y{id,tweezerNum}(i) = mean(vals,'omitnan');
-    
-                nValid = sum(~isnan(vals));
-    
-                if nValid > 1
-                    yerr{id,tweezerNum}(i) = ...
-                        std(vals,'omitnan') / sqrt(nValid);
-                elseif nValid == 1
-                    yerr{id,tweezerNum}(i) = 0;
-                end
+        end
+
+
+        %% Mean and standard error for each individual ROI
+
+        for roiNum = 1:numROIs
+
+            values = valuesAtX{roiNum};
+            values = values(isfinite(values));
+
+            numValues = numel(values);
+
+            if numValues == 0
+                continue;
+            end
+
+            y{id,roiNum}(xIndex) = mean(values);
+
+            if numValues > 1
+
+                yerr{id,roiNum}(xIndex) = ...
+                    std(values,0) / sqrt(numValues);
+
+            else
+
+                yerr{id,roiNum}(xIndex) = 0;
             end
         end
-    
-        %% Scalar average across the independent variable for each tweezer
-        for tweezerNum = 1:numTweezers
-    
-            thisCurve = y{id,tweezerNum};
-    
-            AvgSig(id,tweezerNum) = mean(thisCurve,'omitnan');
-    
-            nValid = sum(~isnan(thisCurve));
-    
-            if nValid > 1
-                AvgSig_err(id,tweezerNum) = ...
-                    std(thisCurve,'omitnan') / sqrt(nValid);
-            elseif nValid == 1
-                AvgSig_err(id,tweezerNum) = 0;
-            end
-        end
-    
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% Define ROI groups
-    
-    numNonTweezers1 = analyVar.numFakeTweezers1;
-    numNonTweezers2 = analyVar.numFakeTweezers2;
-    
-    numRealTweezers = ...
-        numTweezers - numNonTweezers1 - numNonTweezers2;
-    
-    %% Validate the requested grouping
-    
-    groupCounts = [
-        numRealTweezers
-        numNonTweezers1
-        numNonTweezers2
-    ];
-    
-    if any(groupCounts < 0) || any(groupCounts ~= round(groupCounts))
-        error(['The numbers of real tweezers and non-tweezer ROIs ' ...
-               'must all be nonnegative integers.']);
     end
-    
-    if numRealTweezers < 1
-        error(['The selected non-tweezer section sizes leave no real ' ...
-               'tweezer ROIs.']);
+
+
+    %% Scalar average of the complete curve for each ROI
+
+    for roiNum = 1:numROIs
+
+        thisCurve = y{id,roiNum};
+        thisCurveErr = yerr{id,roiNum};
+
+        [avgSignal(id,roiNum), ...
+         avgSignalErr(id,roiNum)] = ...
+            combineMeanValues( ...
+                thisCurve, ...
+                thisCurveErr);
     end
-    
-    if sum(groupCounts) ~= numTweezers
-        error(['ROI grouping error: %d real + %d section-1 + ' ...
-               '%d section-2 does not equal %d total ROIs.'], ...
-            numRealTweezers, ...
-            numNonTweezers1, ...
-            numNonTweezers2, ...
-            numTweezers);
-    end
-    
-    %% ROI indices
-    %
-    % Example for 12 total, section 1 = 2, section 2 = 4:
-    %   realTweezerIndices = 1:6
-    %   nonTweezer1Indices = 7:8
-    %   nonTweezer2Indices = 9:12
-    
-    realTweezerIndices = ...
-        1:numRealTweezers;
-    
-    nonTweezer1Indices = ...
-        (numRealTweezers + 1): ...
-        (numRealTweezers + numNonTweezers1);
-    
-    nonTweezer2Indices = ...
-        (numRealTweezers + numNonTweezers1 + 1): ...
-        numTweezers;
-    
-    
-    %% Average the real-tweezer curves
-    
-    tweezerCurveMatrix = ...
-        nan(numX,numRealTweezers);
-    
-    for localIndex = 1:numRealTweezers
-    
-        roiNum = realTweezerIndices(localIndex);
-    
-        tweezerCurveMatrix(:,localIndex) = ...
-            y{id,roiNum};
-    end
-    
-    yTweezerMean{id} = ...
-        mean(tweezerCurveMatrix,2,'omitnan');
-    
-    nTweezersAtPoint = ...
-        sum(~isnan(tweezerCurveMatrix),2);
-    
-    yTweezerErr{id} = ...
-        std(tweezerCurveMatrix,0,2,'omitnan') ./ ...
-        sqrt(nTweezersAtPoint);
-    
-    yTweezerErr{id}(nTweezersAtPoint <= 1) = 0;
-    
-    
-    %% Average non-tweezer section 1
-    
+
+
+    %% Point-by-point average of real-tweezer curves
+
+    realCurveMatrix = ...
+        cell2mat(y(id,realTweezerIndices));
+
+    realErrorMatrix = ...
+        cell2mat(yerr(id,realTweezerIndices));
+
+    [yTweezerMean{id}, ...
+     yTweezerErr{id}] = ...
+        combineMeanMatrix( ...
+            realCurveMatrix, ...
+            realErrorMatrix);
+
+
+    %% Point-by-point average of non-tweezer section 1
+
     if numNonTweezers1 > 0
-    
-        nonTweezer1CurveMatrix = ...
-            nan(numX,numNonTweezers1);
-    
-        for localIndex = 1:numNonTweezers1
-    
-            roiNum = nonTweezer1Indices(localIndex);
-    
-            nonTweezer1CurveMatrix(:,localIndex) = ...
-                y{id,roiNum};
-        end
-    
-        yNonTweezer1Mean{id} = ...
-            mean(nonTweezer1CurveMatrix,2,'omitnan');
-    
-        nNonTweezers1AtPoint = ...
-            sum(~isnan(nonTweezer1CurveMatrix),2);
-    
-        yNonTweezer1Err{id} = ...
-            std(nonTweezer1CurveMatrix,0,2,'omitnan') ./ ...
-            sqrt(nNonTweezers1AtPoint);
-    
-        yNonTweezer1Err{id}(nNonTweezers1AtPoint <= 1) = 0;
-    
+
+        section1CurveMatrix = ...
+            cell2mat(y(id,nonTweezer1Indices));
+
+        section1ErrorMatrix = ...
+            cell2mat(yerr(id,nonTweezer1Indices));
+
+        [yNonTweezer1Mean{id}, ...
+         yNonTweezer1Err{id}] = ...
+            combineMeanMatrix( ...
+                section1CurveMatrix, ...
+                section1ErrorMatrix);
+
     else
-    
+
         yNonTweezer1Mean{id} = nan(numX,1);
         yNonTweezer1Err{id} = nan(numX,1);
     end
-    
-    
-    %% Average non-tweezer section 2
-    
+
+
+    %% Point-by-point average of non-tweezer section 2
+
     if numNonTweezers2 > 0
-    
-        nonTweezer2CurveMatrix = ...
-            nan(numX,numNonTweezers2);
-    
-        for localIndex = 1:numNonTweezers2
-    
-            roiNum = nonTweezer2Indices(localIndex);
-    
-            nonTweezer2CurveMatrix(:,localIndex) = ...
-                y{id,roiNum};
-        end
-    
-        yNonTweezer2Mean{id} = ...
-            mean(nonTweezer2CurveMatrix,2,'omitnan');
-    
-        nNonTweezers2AtPoint = ...
-            sum(~isnan(nonTweezer2CurveMatrix),2);
-    
-        yNonTweezer2Err{id} = ...
-            std(nonTweezer2CurveMatrix,0,2,'omitnan') ./ ...
-            sqrt(nNonTweezers2AtPoint);
-    
-        yNonTweezer2Err{id}(nNonTweezers2AtPoint <= 1) = 0;
-    
+
+        section2CurveMatrix = ...
+            cell2mat(y(id,nonTweezer2Indices));
+
+        section2ErrorMatrix = ...
+            cell2mat(yerr(id,nonTweezer2Indices));
+
+        [yNonTweezer2Mean{id}, ...
+         yNonTweezer2Err{id}] = ...
+            combineMeanMatrix( ...
+                section2CurveMatrix, ...
+                section2ErrorMatrix);
+
     else
-    
+
         yNonTweezer2Mean{id} = nan(numX,1);
         yNonTweezer2Err{id} = nan(numX,1);
     end
-    
-    
-    %% One scalar per scan ID: real tweezers
-    
-    realTweezerAvgValues = ...
-        AvgSig(id,realTweezerIndices);
-    
-    AvgAllTweezers(id) = ...
-        mean(realTweezerAvgValues,'omitnan');
-    
-    nValidTweezers(id) = ...
-        sum(~isnan(realTweezerAvgValues));
-    
-    if nValidTweezers(id) > 1
-    
-        AvgAllTweezers_err(id) = ...
-            std(realTweezerAvgValues,0,'omitnan') / ...
-            sqrt(nValidTweezers(id));
-    
-    elseif nValidTweezers(id) == 1
-    
-        AvgAllTweezers_err(id) = 0;
-    
-    else
-    
-        AvgAllTweezers_err(id) = NaN;
-    end
-    
-    
-    %% One scalar per scan ID: non-tweezer section 1
-    
-    if numNonTweezers1 > 0
-    
-        nonTweezer1AvgValues = ...
-            AvgSig(id,nonTweezer1Indices);
-    
-        AvgAllNonTweezers1(id) = ...
-            mean(nonTweezer1AvgValues,'omitnan');
-    
-        nValidNonTweezers1(id) = ...
-            sum(~isnan(nonTweezer1AvgValues));
-    
-        if nValidNonTweezers1(id) > 1
-    
-            AvgAllNonTweezers1_err(id) = ...
-                std(nonTweezer1AvgValues,0,'omitnan') / ...
-                sqrt(nValidNonTweezers1(id));
-    
-        elseif nValidNonTweezers1(id) == 1
-    
-            AvgAllNonTweezers1_err(id) = 0;
-    
-        else
-    
-            AvgAllNonTweezers1_err(id) = NaN;
-        end
-    
-    else
-    
-        AvgAllNonTweezers1(id) = NaN;
-        AvgAllNonTweezers1_err(id) = NaN;
-        nValidNonTweezers1(id) = 0;
-    end
-    
-    
-    %% One scalar per scan ID: non-tweezer section 2
-    
-    if numNonTweezers2 > 0
-    
-        nonTweezer2AvgValues = ...
-            AvgSig(id,nonTweezer2Indices);
-    
-        AvgAllNonTweezers2(id) = ...
-            mean(nonTweezer2AvgValues,'omitnan');
-    
-        nValidNonTweezers2(id) = ...
-            sum(~isnan(nonTweezer2AvgValues));
-    
-        if nValidNonTweezers2(id) > 1
-    
-            AvgAllNonTweezers2_err(id) = ...
-                std(nonTweezer2AvgValues,0,'omitnan') / ...
-                sqrt(nValidNonTweezers2(id));
-    
-        elseif nValidNonTweezers2(id) == 1
-    
-            AvgAllNonTweezers2_err(id) = 0;
-    
-        else
-    
-            AvgAllNonTweezers2_err(id) = NaN;
-        end
-    
-    else
-    
-        AvgAllNonTweezers2(id) = NaN;
-        AvgAllNonTweezers2_err(id) = NaN;
-        nValidNonTweezers2(id) = 0;
-    end
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %% Plot each individual Averaged Tweezer
-    colors = lines(numScanIDs);
 
-    for tweezerNum = 1:numTweezers
-    
-        figure;
-        hold on;
-    
-        legendList = cell(numScanIDs,1);
-    
-        for id = 1:numScanIDs
-    
-            errorbar( ...
-                x{id}, ...
-                y{id,tweezerNum}, ...
-                yerr{id,tweezerNum}, ...
-                'o-', ...
-                'Color', colors(id,:), ...
-                'MarkerFaceColor', colors(id,:));
-    
-            legendList{id} = sprintf('%s = %g', ...
-                analyVar.avgScanParam, scanIDs(id));
-        end
-    
-        xlabel(analyVar.avgScanParam, 'Interpreter','none');
-        ylabel(depVarField, 'Interpreter','none');
-    
-        title(sprintf('Tweezer ROI %d', tweezerNum));
-    
-        legend(legendList,'Location','best');
-        grid on;
-        hold off;
+
+    %% Scalar average across all real-tweezer ROI means
+
+    [avgAllTweezers(id), ...
+     avgAllTweezersErr(id)] = ...
+        combineMeanValues( ...
+            avgSignal(id,realTweezerIndices), ...
+            avgSignalErr(id,realTweezerIndices));
+
+
+    %% Scalar average across non-tweezer section 1 ROI means
+
+    if numNonTweezers1 > 0
+
+        [avgAllNonTweezers1(id), ...
+         avgAllNonTweezers1Err(id)] = ...
+            combineMeanValues( ...
+                avgSignal(id,nonTweezer1Indices), ...
+                avgSignalErr(id,nonTweezer1Indices));
     end
-    
-    %% Plot the average of the real-tweezer spots
-    
+
+
+    %% Scalar average across non-tweezer section 2 ROI means
+
+    if numNonTweezers2 > 0
+
+        [avgAllNonTweezers2(id), ...
+         avgAllNonTweezers2Err(id)] = ...
+            combineMeanValues( ...
+                avgSignal(id,nonTweezer2Indices), ...
+                avgSignalErr(id,nonTweezer2Indices));
+    end
+end
+
+
+%% Plot each individual ROI
+
+scanColors = lines(numScanIDs);
+
+for roiNum = 1:numROIs
+
     figure;
     hold on;
-    
-    legendList = cell(numScanIDs,1);
-    colors = lines(numScanIDs);
-    
+
     for id = 1:numScanIDs
-    
+
+        if isempty(x{id})
+            continue;
+        end
+
         errorbar( ...
             x{id}, ...
-            yTweezerMean{id}, ...
-            yTweezerErr{id}, ...
+            y{id,roiNum}, ...
+            yerr{id,roiNum}, ...
             'o-', ...
-            'Color',colors(id,:), ...
-            'MarkerFaceColor',colors(id,:));
-    
-        legendList{id} = sprintf('%s = %g', ...
-            analyVar.avgScanParam,scanIDs(id));
-    end
-    
-    xlabel(analyVar.avgScanParam,'Interpreter','none');
-    
-    ylabel(sprintf( ...
-        'Mean %s across %d real tweezers', ...
-        depVarField,numRealTweezers), ...
-        'Interpreter','none');
-    
-    title('Average of Real-Tweezer ROI Signals');
-    
-    legend(legendList,'Location','best');
-    grid on;
-    hold off;
-    
-    
-    %% Plot the average of non-tweezer section 1
-    
-    if numNonTweezers1 > 0
-    
-        figure;
-        hold on;
-    
-        legendList = cell(numScanIDs,1);
-    
-        for id = 1:numScanIDs
-    
-            errorbar( ...
-                x{id}, ...
-                yNonTweezer1Mean{id}, ...
-                yNonTweezer1Err{id}, ...
-                'o-', ...
-                'Color',colors(id,:), ...
-                'MarkerFaceColor',colors(id,:));
-    
-            legendList{id} = sprintf('%s = %g', ...
-                analyVar.avgScanParam,scanIDs(id));
-        end
-    
-        xlabel(analyVar.avgScanParam,'Interpreter','none');
-    
-        ylabel(sprintf( ...
-            'Mean %s across %d section-1 ROIs', ...
-            depVarField,numNonTweezers1), ...
-            'Interpreter','none');
-    
-        title(sprintf( ...
-            'Average of Non-Tweezer Section 1: ROIs %d-%d', ...
-            nonTweezer1Indices(1),nonTweezer1Indices(end)));
-    
-        legend(legendList,'Location','best');
-        grid on;
-        hold off;
-    end
-    
-    
-    %% Plot the average of non-tweezer section 2
-    
-    if numNonTweezers2 > 0
-    
-        figure;
-        hold on;
-    
-        legendList = cell(numScanIDs,1);
-    
-        for id = 1:numScanIDs
-    
-            errorbar( ...
-                x{id}, ...
-                yNonTweezer2Mean{id}, ...
-                yNonTweezer2Err{id}, ...
-                'o-', ...
-                'Color',colors(id,:), ...
-                'MarkerFaceColor',colors(id,:));
-    
-            legendList{id} = sprintf('%s = %g', ...
-                analyVar.avgScanParam,scanIDs(id));
-        end
-    
-        xlabel(analyVar.avgScanParam,'Interpreter','none');
-    
-        ylabel(sprintf( ...
-            'Mean %s across %d section-2 ROIs', ...
-            depVarField,numNonTweezers2), ...
-            'Interpreter','none');
-    
-        title(sprintf( ...
-            'Average of Non-Tweezer Section 2: ROIs %d-%d', ...
-            nonTweezer2Indices(1),nonTweezer2Indices(end)));
-    
-        legend(legendList,'Location','best');
-        grid on;
-        hold off;
-    end
-    
-    
-    %% Compare all three ROI-group averages for each scan ID
-    
-    comparisonColors = lines(3);
-    
-    for id = 1:numScanIDs
-    
-        figure;
-        hold on;
-    
-        comparisonLegend = {};
-    
-        %% Real-tweezer group
-    
-        errorbar( ...
-            x{id}, ...
-            yTweezerMean{id}, ...
-            yTweezerErr{id}, ...
-            'o-', ...
-            'Color',comparisonColors(1,:), ...
-            'MarkerFaceColor',comparisonColors(1,:), ...
+            'Color',scanColors(id,:), ...
+            'MarkerFaceColor',scanColors(id,:), ...
             'DisplayName',sprintf( ...
-                'Real tweezers: ROIs %d-%d', ...
-                realTweezerIndices(1), ...
-                realTweezerIndices(end)));
-    
-        comparisonLegend{end+1} = sprintf( ...
+                '%s = %g', ...
+                analyVar.avgScanParam, ...
+                scanIDs(id)));
+    end
+
+    xlabel( ...
+        analyVar.avgScanParam, ...
+        'Interpreter','none');
+
+    ylabel( ...
+        depVarField, ...
+        'Interpreter','none');
+
+    title(sprintf('Tweezer ROI %d',roiNum));
+
+    legend('Location','best');
+    grid on;
+    box on;
+    hold off;
+end
+
+
+%% Plot average real-tweezer curve
+
+plotGroupCurves( ...
+    x, ...
+    yTweezerMean, ...
+    yTweezerErr, ...
+    scanIDs, ...
+    scanColors, ...
+    analyVar.avgScanParam, ...
+    depVarField, ...
+    sprintf( ...
+        'Mean %s across %d real tweezers', ...
+        depVarField, ...
+        numRealTweezers), ...
+    'Average of Real-Tweezer ROI Signals');
+
+
+%% Plot average non-tweezer section 1 curve
+
+if numNonTweezers1 > 0
+
+    plotGroupCurves( ...
+        x, ...
+        yNonTweezer1Mean, ...
+        yNonTweezer1Err, ...
+        scanIDs, ...
+        scanColors, ...
+        analyVar.avgScanParam, ...
+        depVarField, ...
+        sprintf( ...
+            'Mean %s across %d section-1 ROIs', ...
+            depVarField, ...
+            numNonTweezers1), ...
+        sprintf( ...
+            'Average of Non-Tweezer Section 1: ROIs %d-%d', ...
+            nonTweezer1Indices(1), ...
+            nonTweezer1Indices(end)));
+end
+
+
+%% Plot average non-tweezer section 2 curve
+
+if numNonTweezers2 > 0
+
+    plotGroupCurves( ...
+        x, ...
+        yNonTweezer2Mean, ...
+        yNonTweezer2Err, ...
+        scanIDs, ...
+        scanColors, ...
+        analyVar.avgScanParam, ...
+        depVarField, ...
+        sprintf( ...
+            'Mean %s across %d section-2 ROIs', ...
+            depVarField, ...
+            numNonTweezers2), ...
+        sprintf( ...
+            'Average of Non-Tweezer Section 2: ROIs %d-%d', ...
+            nonTweezer2Indices(1), ...
+            nonTweezer2Indices(end)));
+end
+
+
+%% Compare all three ROI groups for each scan ID
+
+comparisonColors = lines(3);
+
+for id = 1:numScanIDs
+
+    if isempty(x{id})
+        continue;
+    end
+
+    figure;
+    hold on;
+
+    errorbar( ...
+        x{id}, ...
+        yTweezerMean{id}, ...
+        yTweezerErr{id}, ...
+        'o-', ...
+        'Color',comparisonColors(1,:), ...
+        'MarkerFaceColor',comparisonColors(1,:), ...
+        'DisplayName',sprintf( ...
             'Real tweezers: ROIs %d-%d', ...
             realTweezerIndices(1), ...
-            realTweezerIndices(end));
-    
-    
-        %% Non-tweezer section 1
-    
-        if numNonTweezers1 > 0
-    
-            errorbar( ...
-                x{id}, ...
-                yNonTweezer1Mean{id}, ...
-                yNonTweezer1Err{id}, ...
-                's-', ...
-                'Color',comparisonColors(2,:), ...
-                'MarkerFaceColor',comparisonColors(2,:), ...
-                'DisplayName',sprintf( ...
-                    'Non-tweezer section 1: ROIs %d-%d', ...
-                    nonTweezer1Indices(1), ...
-                    nonTweezer1Indices(end)));
-    
-            comparisonLegend{end+1} = sprintf( ...
+            realTweezerIndices(end)));
+
+    if numNonTweezers1 > 0
+
+        errorbar( ...
+            x{id}, ...
+            yNonTweezer1Mean{id}, ...
+            yNonTweezer1Err{id}, ...
+            's-', ...
+            'Color',comparisonColors(2,:), ...
+            'MarkerFaceColor',comparisonColors(2,:), ...
+            'DisplayName',sprintf( ...
                 'Non-tweezer section 1: ROIs %d-%d', ...
                 nonTweezer1Indices(1), ...
-                nonTweezer1Indices(end));
-        end
-    
-    
-        %% Non-tweezer section 2
-    
-        if numNonTweezers2 > 0
-    
-            errorbar( ...
-                x{id}, ...
-                yNonTweezer2Mean{id}, ...
-                yNonTweezer2Err{id}, ...
-                'd-', ...
-                'Color',comparisonColors(3,:), ...
-                'MarkerFaceColor',comparisonColors(3,:), ...
-                'DisplayName',sprintf( ...
-                    'Non-tweezer section 2: ROIs %d-%d', ...
-                    nonTweezer2Indices(1), ...
-                    nonTweezer2Indices(end)));
-    
-            comparisonLegend{end+1} = sprintf( ...
+                nonTweezer1Indices(end)));
+    end
+
+    if numNonTweezers2 > 0
+
+        errorbar( ...
+            x{id}, ...
+            yNonTweezer2Mean{id}, ...
+            yNonTweezer2Err{id}, ...
+            'd-', ...
+            'Color',comparisonColors(3,:), ...
+            'MarkerFaceColor',comparisonColors(3,:), ...
+            'DisplayName',sprintf( ...
                 'Non-tweezer section 2: ROIs %d-%d', ...
                 nonTweezer2Indices(1), ...
-                nonTweezer2Indices(end));
-        end
-    
-    
-        xlabel(analyVar.avgScanParam,'Interpreter','none');
-        ylabel(depVarField,'Interpreter','none');
-    
-        title(sprintf( ...
-            '%s = %g: ROI Group Comparison', ...
-            analyVar.avgScanParam,scanIDs(id)), ...
-            'Interpreter','none');
-    
-        legend(comparisonLegend,'Location','best');
-    
-        grid on;
-        box on;
-        hold off;
+                nonTweezer2Indices(end)));
     end
-    
+
+    xlabel( ...
+        analyVar.avgScanParam, ...
+        'Interpreter','none');
+
+    ylabel( ...
+        depVarField, ...
+        'Interpreter','none');
+
+    title(sprintf( ...
+        '%s = %g: ROI Group Comparison', ...
+        analyVar.avgScanParam, ...
+        scanIDs(id)), ...
+        'Interpreter','none');
+
+    legend('Location','best');
+    grid on;
+    box on;
+    hold off;
+end
+
+
+%% Print scalar group averages
+
+fprintf('\nScalar averages over each complete ROI curve:\n');
+
+for id = 1:numScanIDs
+
+    fprintf( ...
+        ['Scan ID %g:\n' ...
+         '  Real tweezers: %.6g +/- %.6g\n'], ...
+        scanIDs(id), ...
+        avgAllTweezers(id), ...
+        avgAllTweezersErr(id));
+
+    if numNonTweezers1 > 0
+
+        fprintf( ...
+            '  Non-tweezer section 1: %.6g +/- %.6g\n', ...
+            avgAllNonTweezers1(id), ...
+            avgAllNonTweezers1Err(id));
+    end
+
+    if numNonTweezers2 > 0
+
+        fprintf( ...
+            '  Non-tweezer section 2: %.6g +/- %.6g\n', ...
+            avgAllNonTweezers2(id), ...
+            avgAllNonTweezers2Err(id));
+    end
+end
+
+end
+
+
+function [combinedMean,combinedError] = ...
+    combineMeanValues(values,errors)
+
+% Combine scalar values using an equal-weight arithmetic mean.
+% The uncertainty includes propagated input uncertainty and scatter
+% between the input means.
+
+values = values(:);
+errors = errors(:);
+
+valid = isfinite(values);
+
+values = values(valid);
+errors = errors(valid);
+
+numValues = numel(values);
+
+if numValues == 0
+
+    combinedMean = NaN;
+    combinedError = NaN;
+    return;
+end
+
+combinedMean = mean(values);
+
+% Missing individual errors cannot contribute to propagated uncertainty.
+validErrors = isfinite(errors);
+
+if any(validErrors)
+
+    propagatedError = ...
+        sqrt(sum(errors(validErrors).^2)) / numValues;
+
+else
+
+    propagatedError = 0;
+end
+
+if numValues > 1
+
+    scatterError = ...
+        std(values,0) / sqrt(numValues);
+
+else
+
+    scatterError = 0;
+end
+
+combinedError = sqrt( ...
+    propagatedError.^2 + scatterError.^2);
+
+end
+
+
+function [meanCurve,errorCurve] = ...
+    combineMeanMatrix(valueMatrix,errorMatrix)
+
+% Combine ROI curves row-by-row using an equal-weight arithmetic mean.
+% Each row corresponds to one independent-variable value.
+% Each column corresponds to one ROI.
+
+if ~isequal(size(valueMatrix),size(errorMatrix))
+
+    error('The value and error matrices must have identical dimensions.');
+end
+
+numPoints = size(valueMatrix,1);
+
+meanCurve = nan(numPoints,1);
+errorCurve = nan(numPoints,1);
+
+for pointNum = 1:numPoints
+
+    [meanCurve(pointNum),errorCurve(pointNum)] = ...
+        combineMeanValues( ...
+            valueMatrix(pointNum,:), ...
+            errorMatrix(pointNum,:));
+end
+
+end
+
+
+function plotGroupCurves( ...
+    x, ...
+    meanCurves, ...
+    errorCurves, ...
+    scanIDs, ...
+    scanColors, ...
+    xLabelText, ...
+    depVarField, ...
+    yLabelText, ...
+    titleText)
+
+figure;
+hold on;
+
+for id = 1:numel(scanIDs)
+
+    if isempty(x{id})
+        continue;
+    end
+
+    errorbar( ...
+        x{id}, ...
+        meanCurves{id}, ...
+        errorCurves{id}, ...
+        'o-', ...
+        'Color',scanColors(id,:), ...
+        'MarkerFaceColor',scanColors(id,:), ...
+        'DisplayName',sprintf( ...
+            '%s = %g', ...
+            xLabelText, ...
+            scanIDs(id)));
+end
+
+xlabel( ...
+    xLabelText, ...
+    'Interpreter','none');
+
+ylabel( ...
+    yLabelText, ...
+    'Interpreter','none');
+
+title( ...
+    titleText, ...
+    'Interpreter','none');
+
+legend('Location','best');
+grid on;
+box on;
+hold off;
+
 end

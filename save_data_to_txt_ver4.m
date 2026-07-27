@@ -10,6 +10,7 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
     use_labview = 0;
     use_images = 0; %analyVar.UseImages;
     use_mcs = analyVar.UseMCS;
+    use_tweezer = analyVar.UseTweezer;
 
     use_COM = 0;
     
@@ -17,6 +18,7 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
     depVarField = {'sfiIntegral'};
     %depVarField = {'sfiIntegral', 'sfiIntegral_roi1_ratio', 'sfiIntegral_roi2_ratio', 'sfiIntegral_roi1', 'sfiIntegral_roi2'};
     %depVarField = {'wavemeterAtom', 'wavemeterBack'};
+    %depVarField = {'TotalCountsImg1Raw'}
     
     %{
     indivBatch_header = {
@@ -73,6 +75,10 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
         'cntrX',...
         'cntrX'
         };
+
+    tweezer_header = {
+        'Scan ID'
+        };
     
     % Loop over individual scans
     for scan_idx = 1:analyVar.numBasenamesAtom
@@ -110,6 +116,12 @@ function [files] = save_data_to_txt_ver4(analyVar, indivDataset)
                out = [out, table(transpose(indivDataset{scan_idx}.All_fitParams{k}{1}.yCntr, indivDataset{scan_idx}.All_fitParams{k}{1}.xCntr), 'VariableNames', COM_header(j))];
             end
         end 
+
+        if use_tweezer
+            for j = 1:length(tweezer_header)
+                out = [out, table(transpose(analyVar.uniqScanList{scan_idx}), 'VariableNames', tweezer_header(j))];
+            end
+        end
         
         % Output file diretory
         output_file_name = strcat(analyVar.basenamevectorAtom{scan_idx},'_out.csv');

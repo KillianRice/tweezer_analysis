@@ -19,8 +19,9 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     form = @(coeffs, x) coeffs(1)*exp(-x/coeffs(2)) + coeffs(3); % A * Exp[-t/tau] + C 
     
     indVarField = 'imagevcoAtom'; % independent variable
-    depVarField = 'sfiIntegral'; % dependent variable
+    %depVarField = 'sfiIntegral'; % dependent variable
     %depVarField = 'numberAtom'; % dependent variable
+    depVarField = 'OD_TotalCountsImg1Raw';
 
     %normalize option (also adjust within initial guess)
     normalize = 0;
@@ -41,7 +42,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
             initialguess(2) = (max(xdata)-min(xdata));
             initialguess(3) = min(ydata)/max(ydata);
         else
-            initialguess(1) = 1000;
+            initialguess(1) = 5000;
             initialguess(2) = (max(xdata)-min(xdata));
             initialguess(3) = min(ydata);
         end

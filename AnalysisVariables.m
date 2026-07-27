@@ -118,10 +118,10 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
 
                     };
 
-%plugInVec = [36];
+%plugInVec = [22,23,39];
 %plugInVec = [22,23,37,38,69];
 %plugInVec = [22,36,35];
-plugInVec = [27,39];
+plugInVec = [59];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -144,7 +144,7 @@ DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
 dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
 avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
-avgScanParam = '689 Frequency'; % What is the given name of that parameter
+avgScanParam = '689 Freq'; % What is the given name of that parameter
 avgOutSubDir = 'AveragedFits/';
 plotHistogram = 0;
 NormalizeTweezers = 0;
@@ -152,7 +152,7 @@ fitODImage = 1;
 plotIndivTwzrCounts = 1; plotRawCounts = 1;
 plotRawImage  = 0;             % Processed raw images
 AveragedFitMode = 'allImagesByTweezer';   % 'scanParameter' or 'allImagesByTweezer'
-numFakeTweezers1 = 4; numFakeTweezers2 = 4;  % In check_tweezer_pnts how many ROIs (at the end) where non-tweezers %1 is within RMOT 2 is far from RMOT
+numFakeTweezers1 = 0; numFakeTweezers2 = 0;  % In check_tweezer_pnts how many ROIs (at the end) where non-tweezers %1 is within RMOT 2 is far from RMOT
 
 
 analyVar.FluorescenceRemoveCornerOffset = 0;
@@ -160,7 +160,7 @@ analyVar.FluorescenceClipNegative = 1;
 
 %% Plotting presentation (X value units) %%
 %variable to call in other functions is .xDataUnit & .xDataLabel
-TimeOrDetune  = 'Frequency'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
+TimeOrDetune  = 'Time'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
 
 
 %% Common Plotting flags
@@ -237,7 +237,7 @@ end
 if CameraType == 1
     binHorizontal  = 2;%binning done by camera when taking images
     binVertical    = 2;
-    matrixSize     = [2000/binVertical 2000/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
+    matrixSize     = [2048/binVertical 2048/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
 end 
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
@@ -602,7 +602,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_mmWavePolarizationUpTo40GHzHorn';  %%%CHANGE FILE NAME
+analyPrefix     = '_twzrTempDiagAndAIdecayMeas';  %%%CHANGE FILE NAME
 %analyPrefix     = '_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 analyOutputName = 'Analysis';
 
