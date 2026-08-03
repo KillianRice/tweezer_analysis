@@ -191,19 +191,59 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
             end
         
             if plotAllAvgs
-                figure
-                hold on
+                % figure
+                % hold on
+                % for i = 1:length(scanIDs)
+                %     myAvgDataPlot(xavg{i},yavg{i},yerr{i},i,analyVar);
+                %     myFitLinePlot(fitx, form(avg_coeffs{i},fitx),i,analyVar);
+                %     xlabel(xlabeltext,'Interpreter','none');
+                %     ylabel(ylabeltext,'Interpreter','none');
+                %     legend(num2str(scanIDs(i)));
+                %     set(gca, 'YScale', yAxisScale);
+                %     set(gca, 'XScale', xAxisScale);
+                % end
+                % legend(num2str(scanIDs));
+                % hold off
+                figure;
+                hold on;
+                
+                legendHandles = gobjects(length(scanIDs),1);
+                legendLabels  = cell(length(scanIDs),1);
+                
                 for i = 1:length(scanIDs)
-                    myAvgDataPlot(xavg{i},yavg{i},yerr{i},i,analyVar);
-                    myFitLinePlot(fitx, form(avg_coeffs{i},fitx),i,analyVar);
-                    xlabel(xlabeltext,'Interpreter','none');
-                    ylabel(ylabeltext,'Interpreter','none');
-                    legend(num2str(scanIDs(i)));
-                    set(gca, 'YScale', yAxisScale);
-                    set(gca, 'XScale', xAxisScale);
+                
+                    % Plot data and keep its graphics handle for the legend
+                    legendHandles(i) = myAvgDataPlot( ...
+                        xavg{i}, ...
+                        yavg{i}, ...
+                        yerr{i}, ...
+                        i, ...
+                        analyVar);
+                
+                    % Plot the corresponding fit, but do not add it separately to the legend
+                    fitHandle = myFitLinePlot( ...
+                        fitx, ...
+                        form(avg_coeffs{i},fitx), ...
+                        i, ...
+                        analyVar);
+                
+                    fitHandle.HandleVisibility = 'off';
+                
+                    legendLabels{i} = num2str(scanIDs(i));
                 end
-                legend(num2str(scanIDs));
-                hold off
+                
+                xlabel(xlabeltext,'Interpreter','none');
+                ylabel(ylabeltext,'Interpreter','none');
+                
+                set(gca,'YScale',yAxisScale);
+                set(gca,'XScale',xAxisScale);
+                
+                legend( ...
+                    legendHandles, ...
+                    legendLabels, ...
+                    'Location','best');
+                
+                hold off;
             end
         xav = xavg;
         yav = yavg;

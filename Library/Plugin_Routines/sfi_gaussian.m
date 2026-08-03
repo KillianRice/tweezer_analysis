@@ -4,16 +4,17 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
 
     indVarField = 'imagevcoAtom';
     % depVarField = 'sfiIntegral_roi1';
-    depVarField = 'sfiIntegral';
-    %depVarField = 'OD_TotalCountsImg1Raw';
+    %depVarField = 'sfiIntegral';
+    depVarField = 'OD_TotalCounts';
    
 
     function x0 = initial_guess(x, y)
 
         x0 = zeros(4,1);
-        % x0(1) = (min(y)-max(y));
-        x0(1) = max(y);
-        x0(2) =  sum(x.*y)/sum(y);
+         x0(1) = (min(y)-max(y));
+        %x0(1) = max(y);
+        %x0(2) =  sum(x.*y)/sum(y);
+        x0(2) = 82.08;
         x0(3) = sqrt(sum((x-x0(2)).^2.*y)/sum(y));
         x0(3) = .05;
         x0(4) = max(y);
@@ -48,8 +49,8 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
     
     options = struct(...
         'PlotIndivFits', false,...
-        'PlotAll', false,...
-        'PlotAllAvgs', false,...
+        'PlotAll', true,...
+        'PlotAllAvgs', true,...
         'PlotInitialGuess', true,...
         'XAxisLabel', 'Valon Synth (MHz)',...
         'CoeffNames', {{'Amplitude', 'Line Center', 'FWHM', 'Offset'}},...

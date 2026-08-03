@@ -114,14 +114,15 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'sfi_double_gaussian',...           %67 Fit a double gaussian to the integrated SFI signal
                     'sfi_quad_gaussian',...             %68 Fit a quadruple gaussian to the integrated SFI signal
                     'zeeman_sfi_triple_lorentzian',...  %69 Fit a zeeman triple gaussian to the integrated SFI signal 
-                    'zeeman_sfi_quintuple_lorentzian'...%70 Fit a zeeman quintuple gaussian to the integrated SFI signal 
+                    'zeeman_sfi_quintuple_lorentzian',...%70 Fit a zeeman quintuple gaussian to the integrated SFI signal
+                    'fit_release_recapture_AveragedCounts'...%71 Fit temperature of a release and recapture signal 
 
                     };
 
-%plugInVec = [22,23,39];
-%plugInVec = [22,23,37,38,69];
+%plugInVec = [22,39];
+%plugInVec = [22,37,38];
 %plugInVec = [22,36,35];
-plugInVec = [59];
+plugInVec = [39];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -144,11 +145,12 @@ DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
 dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
 avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
-avgScanParam = '689 Freq'; % What is the given name of that parameter
+avgScanParam = 'Time (ms)'; % What is the given name of that parameter
+avgScanIDParam = '689 Status'; % For legends on a plot, what does the ID represent
 avgOutSubDir = 'AveragedFits/';
 plotHistogram = 0;
-NormalizeTweezers = 0;
-fitODImage = 1;
+NormalizeTweezers = 1;
+fitODImage = 0;
 plotIndivTwzrCounts = 1; plotRawCounts = 1;
 plotRawImage  = 0;             % Processed raw images
 AveragedFitMode = 'allImagesByTweezer';   % 'scanParameter' or 'allImagesByTweezer'
@@ -176,7 +178,7 @@ end
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -207,15 +209,15 @@ plotAmp      = 0; % Cloud amplitude of each image (2025)
 %%-----------------------------------------------------------------------%%
 %% MCS ROI select options - selects the roi to perform SFI integral upon
 
-%roi1_minimum = 73;
-%roi1_maximum = 86;
-%roi2_minimum = 87;
-%roi2_maximum = 104;
+% roi1_minimum = 42;
+% roi1_maximum = 54;
+% roi2_minimum = 55;
+% roi2_maximum = 90;
 
-roi1_minimum = 10; 
-roi1_maximum = 34; 
-roi2_minimum = 35; 
-roi2_maximum = 52; 
+roi1_minimum = 25; 
+roi1_maximum = 37; 
+roi2_minimum = 38; 
+roi2_maximum = 50; 
 
  
 
@@ -602,7 +604,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_twzrTempDiagAndAIdecayMeas';  %%%CHANGE FILE NAME
+analyPrefix     = '_twzrAccumulateAIDecay';  %%%CHANGE FILE NAME
 %analyPrefix     = '_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 analyOutputName = 'Analysis';
 

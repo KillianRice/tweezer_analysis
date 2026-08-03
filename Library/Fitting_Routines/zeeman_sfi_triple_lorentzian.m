@@ -27,7 +27,7 @@ function funcOut = zeeman_sfi_triple_lorentzian(analyVar, indivDataset, avgDatas
         y2 = y - bg;
         %Center Peak
         %x0 = sum(x.*y2)/sum(y2);
-        x0 = 17570.5;
+        x0 = 18172;
         %x0 = 235.4;
         %other peak locations        %sort x values in ascending order for scans that are backwards
         [xs, idx] = sort(x);
@@ -37,7 +37,7 @@ function funcOut = zeeman_sfi_triple_lorentzian(analyVar, indivDataset, avgDatas
         %    'SortStr','descend');
         %locs = sort(locs(1:3));
         %Delta = mean([x0 - locs(1), locs(3) - x0]);
-        Delta = 0.1;
+        Delta = 8;
         disp(Delta)
         %Amplitudes
         A1 = interp1(x,y2,x0,'linear','extrap');
