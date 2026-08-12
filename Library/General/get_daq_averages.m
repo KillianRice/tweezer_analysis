@@ -1,9 +1,12 @@
 %%%% get_daq_averages - Soumya K Kanungo 2021-02-04
 %%%% returns averaged data of the given field of DAQ_voltages based on the
 %%%% scanID's in the master batch file.
+
+%%% Note: Channel 1 = Timestamp. Channel 2 = imageVCOatom.
+%%% DAQ channels start at Channel 3
 function [c1,c1_err,c2,c2_err] = get_daq_averages(analyVar, indivDataset)
 
-    channels_to_average = [0,5];
+    channels_to_average = [0,1];
     scanIDs = analyVar.uniqScanList;
     c1 = zeros(1,length(scanIDs));
     c2 = zeros(1,length(scanIDs));

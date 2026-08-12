@@ -79,7 +79,7 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'split_fermion_rydberg_line',...    %32 fit the f=11/2 3S1 rydberg lineshape split by a magnetic field
                     'split_fermion_rydberg_line_constrained',... %33 same fit as 31 but with certain parameters fixed.
                     'data_vs_time',...                  %34 plot number, temp, ... vs timestamp
-                    'DAQ_voltages',...                  %35 plot DAQ voltages
+                    'DAQ_voltages',...                  %35 plot DAQ voltages MUST RUN to use daq for later functions
                     'avg_num_and_temp',...              %36 plot histograms of average atom number and temp
                     'MCS_Integrated_SFI_roi_Spectrum',...%37 select roi in for Integrated SFI and plot vs Independent variable
                     'average_plot_sfi_roi'...           %38 plots averages of the two roi's selected
@@ -119,10 +119,10 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
 
                     };
 
-%plugInVec = [22,39];
-%plugInVec = [22,37,38];
+%plugInVec = [22,23,35,39];
 %plugInVec = [22,36,35];
-plugInVec = [39];
+%plugInVec = [22,23,37,38,69];
+plugInVec = [22,23,35];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -135,34 +135,34 @@ Blue_MOTCavPD = [0.1 0.2];                                                  % 46
 
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
-UseImages = 1;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
+UseImages = 0;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
 UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
-UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
+UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 CameraType = 1; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
-UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
-dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
+UseTweezer = 0; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
+dummyScan = 1; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
 avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
-avgScanParam = 'Time (ms)'; % What is the given name of that parameter
+avgScanParam = '532 Power (V)'; % What is the given name of that parameter
 avgScanIDParam = '689 Status'; % For legends on a plot, what does the ID represent
 avgOutSubDir = 'AveragedFits/';
 plotHistogram = 0;
-NormalizeTweezers = 1;
-fitODImage = 0;
-plotIndivTwzrCounts = 1; plotRawCounts = 1;
+NormalizeTweezers = 0;
+fitODImage = 1;
+plotIndivTwzrCounts = 1; plotRawCounts = 0;
 plotRawImage  = 0;             % Processed raw images
 AveragedFitMode = 'allImagesByTweezer';   % 'scanParameter' or 'allImagesByTweezer'
 numFakeTweezers1 = 0; numFakeTweezers2 = 0;  % In check_tweezer_pnts how many ROIs (at the end) where non-tweezers %1 is within RMOT 2 is far from RMOT
 
 
 analyVar.FluorescenceRemoveCornerOffset = 0;
-analyVar.FluorescenceClipNegative = 1;
+analyVar.FluorescenceClipNegative = 0;
 
 %% Plotting presentation (X value units) %%
 %variable to call in other functions is .xDataUnit & .xDataLabel
-TimeOrDetune  = 'Time'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
+TimeOrDetune  = 'Voltage'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
 
 
 %% Common Plotting flags
@@ -178,7 +178,7 @@ end
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -214,9 +214,9 @@ plotAmp      = 0; % Cloud amplitude of each image (2025)
 % roi2_minimum = 55;
 % roi2_maximum = 90;
 
-roi1_minimum = 25; 
-roi1_maximum = 37; 
-roi2_minimum = 38; 
+roi1_minimum = 32; 
+roi1_maximum = 39; 
+roi2_minimum = 40; 
 roi2_maximum = 50; 
 
  
@@ -604,7 +604,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_twzrAccumulateAIDecay';  %%%CHANGE FILE NAME
+analyPrefix     = '_twzrAccStudyANDAIDecay';  %%%CHANGE FILE NAME
 %analyPrefix     = '_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 analyOutputName = 'Analysis';
 

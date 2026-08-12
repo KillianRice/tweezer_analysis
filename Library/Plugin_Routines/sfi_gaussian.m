@@ -11,13 +11,14 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
     function x0 = initial_guess(x, y)
 
         x0 = zeros(4,1);
-         x0(1) = (min(y)-max(y));
-        %x0(1) = max(y);
+        x0(1) = (min(y)-max(y)); %% For negative gaussians
+        %x0(1) = max(y);             %% For positive
         %x0(2) =  sum(x.*y)/sum(y);
-        x0(2) = 82.08;
+        x0(2) = 82.07;
         x0(3) = sqrt(sum((x-x0(2)).^2.*y)/sum(y));
-        x0(3) = .05;
-        x0(4) = max(y);
+        x0(3) = .02;
+        x0(4) = max(y);            %% For negative gaussians
+        %x0(4) = min(y);             %% For positive
 
     end
 
@@ -56,7 +57,9 @@ function funcOut = sfi_gaussian(analyVar, indivDataset, avgDataset)
         'CoeffNames', {{'Amplitude', 'Line Center', 'FWHM', 'Offset'}},...
         'CoeffUnits', {{'','MHz','MHz',''}},...
         'AnnotateFunction', @myAnnotate,...
-        'Statistics', 'gaussian');
+        'Statistics', 'gaussian', ...
+        'PlotNormalized', true, ...
+        'PlotNormToMeasuredParams', false);
     
     base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @initial_guess, options)
 

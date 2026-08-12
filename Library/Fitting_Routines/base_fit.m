@@ -25,7 +25,9 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         'YAxisScale', 'linear',...
         'XAxisScale', 'linear',...
         'FitTitle', call,...
-        'Statistics', 'gaussian');
+        'Statistics', 'gaussian', ...
+        'PlotNormalized', false, ...
+        'PlotNormToMeasuredParams', true);
     
     if nargin > 7
         opts = fieldnames(useroptions);
@@ -45,6 +47,8 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
     plotInitialGuess = options.PlotInitialGuess;
     plotAll = options.PlotAll;
     plotAllAvgs = options.PlotAllAvgs;
+    plotNormalized = options.PlotNormalized;
+    plotNormToMeasuredParams = options.PlotNormToMeasuredParams; %% Include For normalizing fits and plots to params: Atom Num, Power, etc...
 
     fitLB = options.FitLB;
     fitUB = options.FitUB;
@@ -102,11 +106,19 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         
                 figure
                 hold on
-                    if plotInitialGuess
-                        defaultInitialGuessPlot(fitx, form(initialguess, fitx), i, analyVar);
+                    if plotNormalized                   %% Edit for plotting normalized data and fits
+                        if plotInitialGuess
+                            defaultInitialGuessPlot(fitx, form(initialguess, fitx)/initialguess(end), i, analyVar);
+                        end
+                        myDataPlot(xdata{i},ydata{i}/coeffs{i}(end),i,analyVar);
+                        myFitLinePlot(fitx, form(coeffs{i},fitx)/coeffs{i}(end),i,analyVar);
+                    else
+                        if plotInitialGuess
+                            defaultInitialGuessPlot(fitx, form(initialguess, fitx), i, analyVar);
+                        end
+                        myDataPlot(xdata{i},ydata{i},i,analyVar);
+                        myFitLinePlot(fitx, form(coeffs{i},fitx),i,analyVar);
                     end
-                    myDataPlot(xdata{i},ydata{i},i,analyVar);
-                    myFitLinePlot(fitx, form(coeffs{i},fitx),i,analyVar);
                     myAnnotate(coeffs{i},uncs{i}, coeffNames, coeffUnits);
                     disp(strcat(['Fit data for ' num2str(analyVar.timevectorAtom(i))]))
                     disp(coeffs{i})
@@ -129,7 +141,11 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                 figure
                 hold on
                 for i = 1:analyVar.numBasenamesAtom
-                    myDataPlot(xdata{i},ydata{i},i,analyVar);
+                    if plotNormalized
+                        myDataPlot(xdata{i},ydata{i}/coeffs{i}(end),i,analyVar);
+                    else
+                        myDataPlot(xdata{i},ydata{i},i,analyVar);
+                    end
                     %myFitLinePlot(fitx, form(coeffs{i},fitx),i,analyVar);
                     xlabel(xlabeltext);
                     ylabel(ylabeltext);
@@ -151,6 +167,15 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
             scanIDs = analyVar.uniqScanList;
             avg_coeffs = cell(length(scanIDs),1);
             avg_unc = cell(length(scanIDs),1);
+
+            %% Normalize data based on Params (E.g. AtomNum, Power, etc..)
+            if plotNormToMeasuredParams
+                [num, ~, tx, ~, ty, ~] = get_num_temp_averages(analyVar, indivDataset);
+                [spec413,~,spec461,~] = get_daq_averages(analyVar, indivDataset);
+                disp(['spec 413: ', num2str(spec413)]);
+                disp(['spec 461: ', num2str(spec461)]);
+                disp(['num: ', num2str(num)]);
+            end
         
             for i = 1:length(scanIDs)
         
@@ -158,6 +183,11 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                     warning(['Dimensions of xdata, ydata not the same. ' ...
                         'Trying to fix, but may lead to unpredictable results.'])
                     yavg{i} = yavg{i}';
+                end
+
+                if plotNormToMeasuredParams
+                    yavg{i} = yavg{i}/num(i)/spec413(i)/spec461(i);
+                    yerr{i} = yerr{i}/num(i)/spec413(i)/spec461(i);
                 end
         
                 % fit the data
@@ -172,11 +202,20 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         
                 figure
                 hold on
-                    if plotInitialGuess
-                        defaultInitialGuessPlot(fitx, form(initialguess, fitx), i, analyVar);
+                    if plotNormalized                   %% Edit for plotting normalized data and fits
+                        if plotInitialGuess
+                            defaultInitialGuessPlot(fitx, form(initialguess, fitx)/initialguess(end), i, analyVar);
+                        end
+                        disp(avg_coeffs{i}(end))
+                        myAvgDataPlot(xavg{i},yavg{i}/avg_coeffs{i}(end),yerr{i}/avg_coeffs{i}(end),i,analyVar);
+                        myFitLinePlot(fitx, form(avg_coeffs{i},fitx)/avg_coeffs{i}(end),i,analyVar);
+                    else
+                        if plotInitialGuess
+                            defaultInitialGuessPlot(fitx, form(initialguess, fitx), i, analyVar);
+                        end
+                        myAvgDataPlot(xavg{i},yavg{i},yerr{i},i,analyVar);
+                        myFitLinePlot(fitx, form(avg_coeffs{i},fitx),i,analyVar);
                     end
-                    myAvgDataPlot(xavg{i},yavg{i},yerr{i},i,analyVar);
-                    myFitLinePlot(fitx, form(avg_coeffs{i},fitx),i,analyVar);
                     myAnnotate(avg_coeffs{i}, avg_unc{i}, coeffNames, coeffUnits);
                     xlabel(xlabeltext,'Interpreter','none');
                     ylabel(ylabeltext,'Interpreter','none');
@@ -212,20 +251,37 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                 
                 for i = 1:length(scanIDs)
                 
-                    % Plot data and keep its graphics handle for the legend
-                    legendHandles(i) = myAvgDataPlot( ...
-                        xavg{i}, ...
-                        yavg{i}, ...
-                        yerr{i}, ...
-                        i, ...
-                        analyVar);
-                
-                    % Plot the corresponding fit, but do not add it separately to the legend
-                    fitHandle = myFitLinePlot( ...
-                        fitx, ...
-                        form(avg_coeffs{i},fitx), ...
-                        i, ...
-                        analyVar);
+                    if plotNormalized
+                        % Plot data and keep its graphics handle for the legend
+                        legendHandles(i) = myAvgDataPlot( ...
+                            xavg{i}, ...
+                            yavg{i}/avg_coeffs{i}(end), ...
+                            yerr{i}/avg_coeffs{i}(end), ...
+                            i, ...
+                            analyVar);
+                    
+                        % Plot the corresponding fit, but do not add it separately to the legend
+                        fitHandle = myFitLinePlot( ...
+                            fitx, ...
+                            form(avg_coeffs{i},fitx)/avg_coeffs{i}(end), ...
+                            i, ...
+                            analyVar);
+                    else
+                                                % Plot data and keep its graphics handle for the legend
+                        legendHandles(i) = myAvgDataPlot( ...
+                            xavg{i}, ...
+                            yavg{i}, ...
+                            yerr{i}, ...
+                            i, ...
+                            analyVar);
+                    
+                        % Plot the corresponding fit, but do not add it separately to the legend
+                        fitHandle = myFitLinePlot( ...
+                            fitx, ...
+                            form(avg_coeffs{i},fitx), ...
+                            i, ...
+                            analyVar);
+                    end
                 
                     fitHandle.HandleVisibility = 'off';
                 

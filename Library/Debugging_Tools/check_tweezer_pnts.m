@@ -17,7 +17,7 @@ analyVar = AnalysisVariables;
 indivDataset = get_indiv_batch_data(analyVar);
 
 %% Defaults
-basenameNum = 1;
+%basenameNum = 1;
 k = 1;
 roiRadiusPix = 5;
 
@@ -34,7 +34,7 @@ if nargin >= 3
 end
 
 fprintf('\nTweezer ROI selector\n');
-fprintf('Using basenameNum = %d, image index k = %d\n', basenameNum, k);
+%fprintf('Using basenameNum = %d, image index k = %d\n', basenameNum, k);
 fprintf('Default ROI radius = %g pixels\n\n', roiRadiusPix);
 
 %% Ask user for ROI radius
@@ -44,41 +44,45 @@ if ~isempty(userRadius)
     roiRadiusPix = userRadius;
 end
 
-%% Average all images in this file
+%% Average all image in the selected files
 avgPrelimRawAtoms = zeros(analyVar.matrixSize);
+num = 0;
 
-for k = 1:indivDataset{basenameNum}.CounterAtom
-
-    atomFile = [analyVar.dataDir char(indivDataset{basenameNum}.fileAtom(k)) analyVar.dataAtom];
-    backFile = [analyVar.dataDir char(indivDataset{basenameNum}.fileBack(k)) analyVar.dataBack];
-
-    sFID = fopen(atomFile,'rb','ieee-be');
-    tFID = fopen(backFile,'rb','ieee-be');
-
-    if sFID < 0
-        error('Could not open atom file:\n%s', atomFile);
+for basenameNum = 1:analyVar.numBasenamesAtom
+    for k = 1:indivDataset{basenameNum}.CounterAtom
+    
+        atomFile = [analyVar.dataDir char(indivDataset{basenameNum}.fileAtom(k)) analyVar.dataAtom];
+        backFile = [analyVar.dataDir char(indivDataset{basenameNum}.fileBack(k)) analyVar.dataBack];
+    
+        sFID = fopen(atomFile,'rb','ieee-be');
+        tFID = fopen(backFile,'rb','ieee-be');
+    
+        if sFID < 0
+            error('Could not open atom file:\n%s', atomFile);
+        end
+    
+        if tFID < 0
+            error('Could not open background file:\n%s', backFile);
+        end
+    
+        fullRawImageAtom = double(fread(sFID, analyVar.matrixSize, '*int16'));
+        fullRawImageBack = double(fread(tFID, analyVar.matrixSize, '*int16'));
+    
+        fclose(sFID);
+        fclose(tFID);
+    
+        if analyVar.UseImages_Fluorescence == 1
+            prelimRawAtoms = fullRawImageAtom;
+        else
+            prelimRawAtoms = log(abs(fullRawImageBack)) - log(abs(fullRawImageAtom));
+        end
+    
+        avgPrelimRawAtoms = avgPrelimRawAtoms + prelimRawAtoms;
+        num = num + 1;
     end
-
-    if tFID < 0
-        error('Could not open background file:\n%s', backFile);
-    end
-
-    fullRawImageAtom = double(fread(sFID, analyVar.matrixSize, '*int16'));
-    fullRawImageBack = double(fread(tFID, analyVar.matrixSize, '*int16'));
-
-    fclose(sFID);
-    fclose(tFID);
-
-    if analyVar.UseImages_Fluorescence == 1
-        prelimRawAtoms = fullRawImageAtom;
-    else
-        prelimRawAtoms = log(abs(fullRawImageBack)) - log(abs(fullRawImageAtom));
-    end
-
-    avgPrelimRawAtoms = avgPrelimRawAtoms + prelimRawAtoms;
 end
 
-avgPrelimRawAtoms = avgPrelimRawAtoms ./ indivDataset{basenameNum}.CounterAtom;
+avgPrelimRawAtoms = avgPrelimRawAtoms ./ num ;
 
 %% Same ROI cut construction as check_pnts
 roiSideLength = 2*analyVar.roiWinRadAtom(basenameNum) + 1;

@@ -14,6 +14,13 @@ function funcOut = normalize_plot(analyVar, indivDataset, avgDataset)
     depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
     species = 1; % choose what species is being normalized: atom, dimer or trimer.
     weighting = 'gaussian';
+    
+    %%Edit for tweezers (unfinished, but need tweezerNum value for getxy to work)
+    if analyVar.UseTweezer
+        tweezerNum = 1;
+    else 
+        tweezerNum = 1;
+    end
 
     swapcodes = 1; %Switch between Soumya Legacy code and Nina's manual data entry code
     
@@ -28,7 +35,7 @@ function funcOut = normalize_plot(analyVar, indivDataset, avgDataset)
             disp('Normalizing for Rydberg trimer')   
         end
         [xavg, yavg, yavgerr] = get_averages(analyVar, indivDataset, avgDataset,...
-                indVarField, depVarField, weighting);
+                indVarField, depVarField, weighting, tweezerNum);
         disp(yavg{1});
         %[uv,~,red,~] = get_daq_averages(analyVar, indivDataset);
 
