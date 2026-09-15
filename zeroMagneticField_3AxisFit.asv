@@ -1,0 +1,36 @@
+function zeroMagneticField_3AxisFit()
+
+    data = readmatrix('Analysis_2026.08.03/zeroBfieldData.xlsx','Sheet','Sheet1');
+    
+    xdata = data(:, 2:4);
+    ydata = data(:, 1);
+
+    deltaFreqModelFun = @(b, X)  sqrt(b(4).*(X(:,1)-b(1)).^2 + ...
+        b(5).*(X(:,2)-b(2)).^2 + ...
+        b(6).*(X(:,3)-b(3)).^2); 
+    % alpha * sqrt((x-x0)^2 + (y-y0)^2 + (z-z0)^2);
+
+    initialguess = zeros(6,1);
+    initialguess(1) = 0.115;
+    initialguess(2) = 0.236;
+    initialguess(3) = 1.661;
+    initialguess(4) = 1;
+    initialguess(5) = 1;
+    initialguess(6) = 1;
+
+    % lb = [0.1,0.1,0.1,0.1,0.1,0.1,0.01];
+    % ub = [2, 2, 2, 2, 2, 2,10];
+
+    lb = [-Inf -Inf -Inf 0 0 0];
+    ub = [ Inf  Inf  Inf Inf Inf Inf];
+
+[coeffs] = lsqcurvefit(deltaFreqModelFun,initialguess,xdata,ydata,lb,ub);
+
+    disp('Zero-field voltages:')
+    fprintf('X = %.6f V\n', coeffs(1));
+    fprintf('Y = %.6f V\n', coeffs(2));
+    fprintf('Z = %.6f V\n', coeffs(3));
+
+    disp('Fit parameters:')
+    disp(coeffs)
+end
