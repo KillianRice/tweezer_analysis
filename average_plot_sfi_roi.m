@@ -4,8 +4,8 @@ function funcOut = average_plot_sfi_roi(analyVar, indivDataset, avgDataset)
     %%% by the flags in the master batch file.
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField1 = 'sfiIntegral_roi1'; % The field of an indivdataset that is to be plotted on the y axis
-    depVarField2 = 'sfiIntegral_roi2'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField2 = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
     
     [xdata, ydata1] = getxy(indVarField, depVarField1, analyVar, indivDataset, avgDataset);
     [xdata, ydata2] = getxy(indVarField, depVarField2, analyVar, indivDataset, avgDataset);

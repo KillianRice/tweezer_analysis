@@ -7,13 +7,15 @@ function avgDataset = add_fit_avg_batch(analyVar, avgDataset)
 %   avgDataset.All_fitParams
 
 %% Preallocate
-[avgDataset.All_OD_Image, ...
- avgDataset.All_PCell, ...
- avgDataset.All_fitParams] = deal(cell(1, avgDataset.tweezerAllImageFit.numTweezers));
+if ~isfield(avgDataset,'All_OD_Image')
+    avgDataset.All_OD_Image = cell(avgDataset.CounterAtom,1);
+    avgDataset.All_PCell = cell(avgDataset.CounterAtom,1);
+    avgDataset.All_fitParams = cell(avgDataset.CounterAtom,1);
+end
 
 %% Rebuild paramFitFiles if missing
 if ~isfield(avgDataset,'paramFitFiles')
-    avgDataset.paramFitFiles = cell(avgDataset.tweezerAllImageFit.numTweezers,1);
+    avgDataset.paramFitFiles = cell(avgDataset.numTweezers,1);
 
     for j = 1:avgDataset.CounterAtom
         safeVal = regexprep(num2str(avgDataset.imagevcoAtom(ceil(j/avgDataset.numTweezers)),'%.12g'), ...
@@ -27,21 +29,33 @@ if ~isfield(avgDataset,'paramFitFiles')
 end
 
 %% SubPlot Info (sizing)
-[avgDataset.SubPlotRows, avgDataset.SubPlotCols] = optiSubPlotNum(avgDataset.tweezerAllImageFit.numTweezers);
+[avgDataset.SubPlotRows, avgDataset.SubPlotCols] = optiSubPlotNum(avgDataset.numTweezers);
 
-%% Loop through averaged images
-for j = 1:avgDataset.tweezerAllImageFit.numTweezers
+if strcmpi(analyVar.AveragedFitMode,'scanParameter')
+    nEntries = avgDataset.CounterAtom;
+else
+    nEntries = avgDataset.numTweezers;
+end
+
+for j = 1:nEntries
 
     %% Read averaged OD image
-    if exist(avgDataset.avgODFiles{j}, 'file')
-        avgDataset.avgODImages{j} = dlmread(avgDataset.avgODFiles{j});
+    if exist(avgDataset.IndivTwzrAvgODFiles{j}, 'file')
+        avgDataset.IndivTwzrAvgODImages{j} = dlmread(avgDataset.IndivTwzrAvgODFiles{j});
     else
         error('imagefit:NoAvgODSaved', ...
-            'Cannot load averaged OD image:\n%s', avgDataset.avgODFiles{j});
+            'Cannot load averaged OD image:\n%s', avgDataset.IndivTwzrAvgODFiles{j});
     end
-
+    
+    fitMode = analyVar.AveragedFitMode;
     %% Read averaged fit parameters
-    fitFile = avgDataset.tweezerAllImageFit.paramFitFiles{j};
+    switch lower(fitMode)
+    
+        case lower('scanParameter')
+            fitFile = avgDataset.paramFitFiles{j};
+        case lower('allImagesByTweezer')
+            fitFile = avgDataset.tweezerAllImageFit.paramFitFiles{j}; %%might need to edit later segments or change method in NumDistFit
+    end
 
     if exist(fitFile, 'file')
 
@@ -61,7 +75,7 @@ for j = 1:avgDataset.tweezerAllImageFit.numTweezers
                 num2cell(P(1:length(analyVar.InitCondList))), ...
                 analyVar.InitCondList, ...
                 2), ...
-            avgDataset.tweezerAllImageFit.PCell{j}, ...
+            avgDataset.All_PCell{j}, ...
             'UniformOutput', 0);
 
     else

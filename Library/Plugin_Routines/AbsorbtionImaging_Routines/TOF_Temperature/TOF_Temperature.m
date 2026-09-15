@@ -154,8 +154,10 @@ for iterVar = 1:length(indVarCell)
     end
     %str={num2str(temperatureAve(iterVar,1))};
     %annotation('textbox','interpreter','latex','String',str,'FitBoxToText','on')
-    str_title = strcat({'Avg. T = '}, num2str(temperatureAve(iterVar,1)*1e3),' mK');
-    title(str_title);
+   str_title = ['Avg. T = ', num2str(temperatureAve(iterVar,1)*1e3), ' mK', newline, ...
+             'Initial Cloud Radius ', num2str(initialradiusX(iterVar,1)), ' , ', num2str(initialradiusY(iterVar,1))];
+
+   title(str_title);
 %     %http://www.mathworks.com/help/curvefit/confidence-and-prediction-bounds.html
 %     Confi_Level=0.99;
 %     [exp_out,gof,output] = fit(x,y,'exp1');

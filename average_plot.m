@@ -7,12 +7,12 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
     %%% by the flags in the master batch file.
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    % depVarField = 'cloudRadX';
+    %depVarField = 'cloudRadX';
     %depVarField = 'numberAtom';
-    %depVarField = 'winTotNum';
+    depVarField = 'winTotNum';
     %depVarField = 'cntrX';
     %depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
-    depVarField = 'OD_TotalCounts';
+    %depVarField = 'OD_TotalCounts';
     
     %[xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     %[xdata_clean, ydata_clean] = getxy_filtered(indVarField, depVarField, analyVar, indivDataset, avgDataset);
@@ -102,9 +102,9 @@ function funcOut = average_plot(analyVar, indivDataset, avgDataset)
             'Color', analyVar.COLORS(id,:));
     end
     legend(num2str(scanIDs));
-    title('689 Cooling Beam | 16 mW 532 Beam');
-    xlabel('689 Cooling Beam AOM Frequency (MHz)');
-    ylabel('Average Total Image Counts');
+    title('Title');
+    xlabel('ODT II Modulation Frequency (MHz)');
+    ylabel('MCS Counts');
     hold off
 
     %% PLot

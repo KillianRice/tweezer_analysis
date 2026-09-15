@@ -5,7 +5,7 @@ function funcOut = average_plot_two_vars(analyVar, indivDataset, avgDataset)
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
     depVarField1 = 'numberAtom';
-    depVarField2 = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField2 = 'tempXAtom'; % The field of an indivdataset that is to be plotted on the y axis
     
 
     xdata = cell(analyVar.numBasenamesAtom,1);
@@ -67,12 +67,12 @@ function funcOut = average_plot_two_vars(analyVar, indivDataset, avgDataset)
         end
     end
     
-    avgDataset.(depVarField1) = y1;
-    avgDataset.(strcat(depVarField1,'_unc')) = yerr1;
-    avgDataset.(strcat(depVarField1,'_x')) = x1;
-    avgDataset.(depVarField2) = y2;
-    avgDataset.(strcat(depVarField2,'_unc')) = yerr2;
-    avgDataset.(strcat(depVarField2,'_x')) = x2;
+    % avgDataset.(depVarField1) = y1;
+    % avgDataset.(strcat(depVarField1,'_unc')) = yerr1;
+    % avgDataset.(strcat(depVarField1,'_x')) = x1;
+    % avgDataset.(depVarField2) = y2;
+    % avgDataset.(strcat(depVarField2,'_unc')) = yerr2;
+    % avgDataset.(strcat(depVarField2,'_x')) = x2;
 
     figure;
     hold on;
@@ -90,7 +90,7 @@ function funcOut = average_plot_two_vars(analyVar, indivDataset, avgDataset)
     end
     legend(num2str(scanIDs))
     yyaxis right
-    ylabel('MCS counts')
+    ylabel('TempX (uK)')
     for id = 1:length(scanIDs)
         errorbar(x2{id}, y2{id}, yerr2{id},...
             'LineStyle','-',...

@@ -5,8 +5,8 @@ function output = MCS_Cum_SFI(analyVar, indivDataset, avgDataset)
     % Choose the range of the independent variable over which you want
     % to accumulate SFI profiles and plot them. 
 
-    UpperLim_imagevcoAtom = 800;      % Upper limit of independent variable named "imagevcoAtom"
-    LowerLim_imagevcoAtom = 280;      % Lower limit of independent variable named "imagevcoAtom"
+    UpperLim_imagevcoAtom = 900;      % Upper limit of independent variable named "imagevcoAtom"
+    LowerLim_imagevcoAtom = 100;      % Lower limit of independent variable named "imagevcoAtom"
 
     for i = 1:analyVar.numBasenamesAtom  %Scan over all the file names selected in batch files.
         [roi_min, roi_max] = param_extract_sfi_roi(analyVar, indivDataset{i});  % Grab the min and max bin number in SFI scan
@@ -60,19 +60,29 @@ function output = MCS_Cum_SFI(analyVar, indivDataset, avgDataset)
         y{id,1} = totsfi;
     end
     
+    Ramp = @(x) analyVar.RampSetPoint .*(1-exp(-x/analyVar.RampTimeConstant));
     figure;
     hold on;
     for id = 1:length(scanIDs)
         y{id};
-        plot(x{id}, y{id}/sum(y{id}),'Color', analyVar.COLORS(id,:));
-    end
-    %sum(y{id})
-    legend(num2str(scanIDs))
-    title('MCS Spectra')
-    xlabel('MCS bins')
-    ylabel('Normalized MCS signal')
-    %yscale log
+        yyaxis left
+        ax = gca;
+        ax.YColor = analyVar.COLORS(id,:);
+        h1 = plot(x{id}*1e6, y{id}/sum(y{id}), ...
+            'Color', analyVar.COLORS(id,:));
+        ylabel('Normalized MCS signal')
+        %yscale log
+        yyaxis right
+        ax.YColor = 'k';
+        h2 = plot(x{id}*1e6, Ramp(x{id}), ...
+            'k--', 'LineWidth', 1.5);
+        ylabel('Ramp Voltage (V)')
+        legend([h1 h2], {'Normalized MCS signal', 'Ramp Voltage'}, ...
+            'Location', 'east');
+    title('MCS signal and Ramp')
+    xlabel('time (us)')
     hold off
+
     %% End of ScanID code.
     avgDataset.('NormalizedMCSspectra') = y;
     avgDataset.('NormalizedMCSspectra_x') = x;
