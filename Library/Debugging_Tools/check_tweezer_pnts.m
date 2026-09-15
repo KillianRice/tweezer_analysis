@@ -99,38 +99,241 @@ Ypix = (-analyVar.roiWinRadAtom(basenameNum):analyVar.roiWinRadAtom(basenameNum)
     + analyVar.cloudRowCntrAtom(1);
 
 %% Click tweezer positions on ROI cut image
-figure(501); clf;
+%% Select tweezer positions
 
-pcolor(Ypix, Xpix, roiCutImage);
-shading flat;
-axis equal tight;
-colorbar;
+fprintf('\nHow would you like to define the tweezer ROIs?\n');
+fprintf('  1 = Click centers on image\n');
+fprintf('  2 = Paste ROI coordinates from tweezerROI.txt\n\n');
 
-title({'Click tweezer centers on ROI cut image', ...
-       'Press Enter when finished'});
+while true
 
-xlabel('Y pixel / row');
-ylabel('X pixel / column');
+    selection = input('Selection [1]: ');
 
-fprintf('\nClick each tweezer center. Press Enter when finished.\n');
+    if isempty(selection)
+        selection = 1;
+    end
 
-[yClick, xClick] = ginput;
+    if isscalar(selection) && ismember(selection,[1 2])
+        break;
+    end
 
-centersXY = round([xClick(:), yClick(:)]);
-%%%Creating local coordinates within the ROI of the image
-centersXY(:,1) = round(centersXY(:,1) - min(Xpix) + 1);
-centersXY(:,2) = round(centersXY(:,2) - min(Ypix) + 1);
+    fprintf('Please enter 1 or 2.\n\n');
 
-nTweezers = size(centersXY,1);
-
-if nTweezers == 0
-    warning('No tweezer centers selected.');
-    tweezerROI = [];
-    return;
 end
 
-fprintf('Selected %d tweezer square ROIs.\n', nTweezers);
 
+%% Mouse-click mode
+
+if selection == 1
+
+    figure(501); clf;
+
+    pcolor(Ypix, Xpix, roiCutImage);
+    shading flat;
+    axis equal tight;
+    colorbar;
+
+    title({'Click tweezer centers on ROI cut image', ...
+           'Press Enter when finished'});
+
+    xlabel('Y pixel / row');
+    ylabel('X pixel / column');
+
+    fprintf('\nClick each tweezer center. Press Enter when finished.\n');
+
+    [yClick, xClick] = ginput;
+
+    centersXY = round([xClick(:), yClick(:)]);
+
+    % Convert from image coordinates to local ROI coordinates
+    centersXY(:,1) = round( ...
+        centersXY(:,1) - min(Xpix) + 1);
+
+    centersXY(:,2) = round( ...
+        centersXY(:,2) - min(Ypix) + 1);
+
+    % Use the ROI radius entered above
+    nTweezers = size(centersXY,1);
+
+
+%% Manual-entry mode
+
+else
+
+    fprintf('\nManual tweezer ROI entry\n');
+    fprintf('Enter ROI data using the following format:\n\n');
+
+    fprintf('1    51    44    5\n');
+    fprintf('2    48    71    5\n');
+    fprintf('3    27    67    5\n');
+    fprintf('4    31    42    5\n\n');
+
+    fprintf('Columns are:\n');
+    fprintf('  index   xCenter   yCenter   roiHalfWidthPix\n\n');
+
+    fprintf('Paste/type the complete set of rows below.\n');
+    fprintf('Finish by entering a blank line.\n\n');
+
+    %% Read rows from command window
+
+    roiData = [];
+
+    while true
+
+        line = input('', 's');
+
+        % Blank line = finished
+        if isempty(strtrim(line))
+            break;
+        end
+
+        % Convert this row to numbers
+        rowData = sscanf(line,'%f').';
+
+        % Validate row
+        if numel(rowData) ~= 4
+
+            fprintf('\n');
+            fprintf('Invalid row:\n');
+            fprintf('  %s\n\n',line);
+
+            fprintf( ...
+                'Expected: index  xCenter  yCenter  roiHalfWidthPix\n\n');
+
+            continue;
+
+        end
+
+        roiData(end+1,:) = rowData; %#ok<AGROW>
+
+    end
+
+    %% Make sure something was entered
+
+    if isempty(roiData)
+
+        warning('No tweezer centers entered.');
+
+        tweezerROI = [];
+
+        return;
+
+    end
+
+    %% Extract coordinates
+
+    centersXY = round(roiData(:,2:3));
+
+    %% Extract ROI radius
+
+    roiRadiusValues = round(roiData(:,4));
+
+    nTweezers = size(centersXY,1);
+
+    %% Validate indices
+
+    expectedIndices = (1:nTweezers).';
+
+    if any(round(roiData(:,1)) ~= expectedIndices)
+
+        warning( ...
+            ['ROI indices are not sequential. ' ...
+             'They will be saved as 1 through %d.'], ...
+            nTweezers);
+
+    end
+
+    %% Validate ROI radius
+
+    if any(roiRadiusValues <= 0)
+
+        error('ROI half-width values must be positive.');
+
+    end
+
+    %% Require same ROI radius
+
+    if any(roiRadiusValues ~= roiRadiusValues(1))
+
+        error( ...
+            ['Different ROI half-widths were entered. ' ...
+             'All ROIs must currently use the same half-width.']);
+
+    end
+
+    roiRadiusPix = roiRadiusValues(1);
+
+    fprintf('\n');
+    fprintf('Read %d tweezer ROIs.\n',nTweezers);
+
+end
+
+
+%% Check that ROIs were supplied
+
+if nTweezers == 0
+
+    warning('No tweezer centers selected.');
+
+    tweezerROI = [];
+
+    return;
+
+end
+
+fprintf( ...
+    'Selected %d tweezer square ROIs.\n', ...
+    nTweezers);
+
+
+%% Check that ROIs were supplied
+
+if nTweezers == 0
+
+    warning('No tweezer centers selected.');
+
+    tweezerROI = [];
+
+    return;
+
+end
+
+fprintf( ...
+    'Selected %d tweezer square ROIs.\n', ...
+    nTweezers);
+
+% figure(501); clf;
+% 
+% pcolor(Ypix, Xpix, roiCutImage);
+% shading flat;
+% axis equal tight;
+% colorbar;
+% 
+% title({'Click tweezer centers on ROI cut image', ...
+%        'Press Enter when finished'});
+% 
+% xlabel('Y pixel / row');
+% ylabel('X pixel / column');
+% 
+% fprintf('\nClick each tweezer center. Press Enter when finished.\n');
+% 
+% [yClick, xClick] = ginput;
+% 
+% centersXY = round([xClick(:), yClick(:)]);
+% %%%Creating local coordinates within the ROI of the image
+% centersXY(:,1) = round(centersXY(:,1) - min(Xpix) + 1);
+% centersXY(:,2) = round(centersXY(:,2) - min(Ypix) + 1);
+% 
+% nTweezers = size(centersXY,1);
+% 
+% if nTweezers == 0
+%     warning('No tweezer centers selected.');
+%     tweezerROI = [];
+%     return;
+% end
+% 
+% fprintf('Selected %d tweezer square ROIs.\n', nTweezers);
+% 
 %% Save ROI info
 tweezerROI = struct;
 tweezerROI.centersXY = centersXY;

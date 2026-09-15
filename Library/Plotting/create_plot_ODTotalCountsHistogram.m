@@ -1,53 +1,3 @@
-% function create_plot_ODTotalCountsHistogram(analyVar,indivDataset)
-% 
-% figure;
-% hold on;
-% colors = lines(analyVar.numBasenamesAtom); % Generates distinct colors for the datasets
-% edges = linspace(-100, 3000, 40);
-% 
-% legendList = {};
-% 
-% for basenameNum = 1:analyVar.numBasenamesAtom
-% 
-%     counts = indivDataset{basenameNum}.OD_TotalCounts(:);
-% 
-%     histogram(counts, 'BinEdges', edges, ...
-%         'Normalization', 'probability', ...
-%         'FaceColor', colors(basenameNum,:), ...
-%          'FaceAlpha', 0.5); % Transparency makes overlaps visible
-% 
-%     legendList{end+1,1} = string(analyVar.meanListVar(basenameNum));
-% 
-% end
-% 
-%     xlabel('Integrated OD counts');
-%     %ytickformat('percentage');
-%     ylabel('Probability');
-%     title(sprintf('OD Total Counts Histogram - %s %g', analyVar.avgScanParam, analyVar.meanListVar(basenameNum)));
-%     grid on;
-%     legend(legendList)
-%     hold off;
-% 
-% 
-% 
-%     for basenameNum = 1:analyVar.numBasenamesAtom
-% 
-%         counts = indivDataset{basenameNum}.OD_TotalCounts(:);
-%         
-%         figure
-%         histogram(counts, 50, ...
-%             'Normalization', 'probability', ...
-%             'FaceColor', colors(basenameNum,:), ...
-%              'FaceAlpha', 0.5); % Transparency makes overlaps visible
-%            xlabel('Integrated OD counts');
-%         %ytickformat('percentage');
-%         ylabel('Probability');
-%         title(sprintf('OD Total Counts Histogram - %s %g', analyVar.avgScanParam, analyVar.meanListVar(basenameNum)));
-%         grid on;
-% 
-%     end
-% end
-
 function create_plot_ODTotalCountsHistogram(analyVar, avgDataset, plotIndividual)
 
 if nargin < 3
@@ -58,7 +8,7 @@ end
 groupVals = zeros(avgDataset.CounterAtom,1);
 
 for j = 1:avgDataset.CounterAtom
-    groupVals(j) = avgDataset.sourceInfo{j}.groupVal;
+    groupVals(j) = avgDataset.sourceInfo{j}.imagevcoAtom;
 end
 
 uniqueGroups = unique(groupVals);

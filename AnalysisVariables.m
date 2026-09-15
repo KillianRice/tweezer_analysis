@@ -115,14 +115,18 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'sfi_quad_gaussian',...             %68 Fit a quadruple gaussian to the integrated SFI signal
                     'zeeman_sfi_triple_lorentzian',...  %69 Fit a zeeman triple gaussian to the integrated SFI signal 
                     'zeeman_sfi_quintuple_lorentzian',...%70 Fit a zeeman quintuple gaussian to the integrated SFI signal
-                    'fit_release_recapture_AveragedCounts'...%71 Fit temperature of a release and recapture signal 
-
+                    'fit_release_recapture_AveragedCounts',...%71 Fit temperature of a release and recapture signal 
+                    'FittedCoeffs_plot',...              %72  Plot coeffs from selected fits above (e.g. Gaussian/Exponetial)
+                    'zeeman_sfi_triple_gaussian_loss',... %73
+                    'tweezerGaussianFit',...             %74 Plot the sum of the x and y axes of tweezers and fit to gaussian
+                    'skewed_sfi_gaussian',...            %75 Skewed Gaussian Fitting
+                    'trap_frequency_triple_gaussian_loss',... %76 fits 3 gaussian loss features from trap frequency measurement done by modulating ODT power
                     };
 
-%plugInVec = [22,23,35,39];
-%plugInVec = [22,36,35];
+%plugInVec = [22,36,35,72];
 %plugInVec = [22,23,37,38,69];
-plugInVec = [22,23,35];
+%plugInVec = [22,27,39];
+plugInVec = [45,46];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -132,29 +136,36 @@ SpecBeam2Threshold = -0.0071;                                               % 82
 ZeemanPD = [1.1 1.5];                                                       % Zeeman 461 nm Beam power mon PD.
 IR_MOTCavPD = [3 5];                                                        % 922 nm Beam power mon PD before MOT cavity.
 Blue_MOTCavPD = [0.1 0.2];                                                  % 461 nm Beam power mon PD from MOT cavity.
+RampSetPoint = 2900;                                                        % Volts Ramp setting on the power supply for single-sided ramp.
+RampTimeConstant = 2e-6;                                                    % seconds Ramp timeconstant for single-sided ramp.
+
 
 %% Types of Data: Image, MCS, etc.
 %%-----------------------------------------------------------------------%%
-UseImages = 0;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
+UseImages = 1;%set to 1 to load cloud (not tweezer) image data. Set to 0 when images are not needed (For MCS analysis or Tweezer).
 UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
-UseMCS = 1; % set to 1 to use mcs data, set to 0 to ignore mcs data
+UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
 CameraType = 1; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
-UseTweezer = 0; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
-dummyScan = 1; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
+%% Tweezer Options
+UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
+dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
 avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
-avgScanParam = '532 Power (V)'; % What is the given name of that parameter
-avgScanIDParam = '689 Status'; % For legends on a plot, what does the ID represent
+avgScanParam = '689 Frequency'; % What is the given name of that parameter
+avgScanIDParam = '532 power (V)'; % For legends on a plot, what does the ID represent
 avgOutSubDir = 'AveragedFits/';
 plotHistogram = 0;
 NormalizeTweezers = 0;
-fitODImage = 1;
+fitODImage = 0;
 plotIndivTwzrCounts = 1; plotRawCounts = 0;
 plotRawImage  = 0;             % Processed raw images
-AveragedFitMode = 'allImagesByTweezer';   % 'scanParameter' or 'allImagesByTweezer'
+AveragedFitMode = 'scanParameter';   % 'scanParameter' or 'allImagesByTweezer'
 numFakeTweezers1 = 0; numFakeTweezers2 = 0;  % In check_tweezer_pnts how many ROIs (at the end) where non-tweezers %1 is within RMOT 2 is far from RMOT
+avgTweezerBasefit = 0;  % Determines if any basefit functions will show a fit of all tweezer ROI counts averaged
+atomCountSignal = 200;
+SkipIndivTwzrFitting = 0;
 
 
 analyVar.FluorescenceRemoveCornerOffset = 0;
@@ -162,7 +173,7 @@ analyVar.FluorescenceClipNegative = 0;
 
 %% Plotting presentation (X value units) %%
 %variable to call in other functions is .xDataUnit & .xDataLabel
-TimeOrDetune  = 'Voltage'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
+TimeOrDetune  = 'Time'; % Valid options are 'Time', 'Detuning', 'Repetition', 'Voltage', 'Frequency'
 
 
 %% Common Plotting flags
@@ -178,7 +189,7 @@ end
 % Flag to Load Image Data
 
 SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
-plotFitEval   = 1; % Boolean to display plots showing the fit, cloud evolution, and residuals
+plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals1
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
 plotFitLine   = 1; % Boolean to extract higher order parameters by fitting instantaneous parameters
@@ -225,11 +236,12 @@ roi2_maximum = 50;
 
 
 %%%% Atom cloud properties
-sampleType     = 'Thermal';  % Options are Thermal, BEC, or Lattice
+sampleType     = 'Thermal';  % Options are Thermal, BEC, Lattice, or Tweezer
 isotope        = 88; % Isotope mass used to select applicable models for fitting. Options are 84, 86, or 88 (87 not currently supported)
-detuning       = 0;  % s^-1, image beam detuning (as of 7/1/15)
+detuning       = 20*10^6*2*pi;  % s^-1, image beam detuning (as of 9/13/2026)
 pureSample     = 1;  % Flags whether BEC samples have a thermal fraction present or not (ignored for Thermal and Lattice samples)
 winToFit       = {'Central'}; % Specify which windows to fit, this generates the vector LatticeAxesFit
+dimenReduc1D   = 1;
 
 if CameraType == 0
     binHorizontal  = 2;%binning done by camera when taking images
@@ -239,7 +251,7 @@ end
 if CameraType == 1
     binHorizontal  = 2;%binning done by camera when taking images
     binVertical    = 2;
-    matrixSize     = [2048/binVertical 2048/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
+    matrixSize     = [600/binVertical 600/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
 end 
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
@@ -266,7 +278,7 @@ switch state
 end
 
 nStar = quantumNumberN - quantumDefect;
-mcs_roi = [9 -1];
+mcs_roi = [4 -1];
 
 positive_ramp_file = './ramps/n120/35v_pos.csv';
 negative_ramp_file = './ramps/n120/35v_neg.csv';
@@ -600,6 +612,7 @@ sizefactor = pixelsize*softwareBinSize*CCDbinning; % effective pixelsize
 %%-----------------------------------------------------------------------%%
 % Add the library folders to the path
 addpath(genpath([pwd filesep 'Library']));
+addpath(genpath([pwd filesep 'Library' filesep 'TweezerRoutines']));
 rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
@@ -622,7 +635,7 @@ dataDir  = [strrep(strrep(lcl_analyDir,analyPrefix,''),[filesep 'Analysis' files
 dataDirName = regexp(dataDir,filesep,'split');
 dataDirName = regexp(dataDirName{end - 1},'_','split');
 dataDirName = dataDirName{1};
-%dataDir = 'F:\Raw_Data\87Sr\2018.05.14\';
+
 % When testing use development data instead of real data (development purposes only)
 %devSettings(v2struct(cat(1,'fieldNames',who())));
 
@@ -692,6 +705,14 @@ switch sampleType
         elseif (isotope == 84 || isotope == 86) && pureSample == 0
             fitModel = 'BimodalThomasFermi';
             InitCase = 'Bimodal';
+        end
+    case {'Tweezer'}
+        if isotope == 88 && pureSample == 1 && dimenReduc1D == 0
+            fitModel = 'PureGaussian';
+            InitCase = 'Pure';
+        elseif isotope == 88 && pureSample == 1 && dimenReduc1D == 1
+            fitModel = 'PureGaussian';
+            InitCase = 'integration1D';
         end
     otherwise
         error('Invalid sample type specified. Check sampleType and try again')

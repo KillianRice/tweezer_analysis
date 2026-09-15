@@ -13,7 +13,9 @@
 %%%% N is the number of measurements per channel. This estimates the worst
 %%%% case mean where you have a 95% chance of measure zero N times.
 
-%%%%Updated 20206.07.17 - added option to grab separate tweezer spots data
+%%%%Updated 2026.07.17 - added option to grab separate tweezer spots data
+%%%%Updated 2026.08.21 - changed loop through counterAtom to be length of
+%%%%indVarField since its not always imagevcoAtom
 
 function [ x,y,yerr ] = get_averages( analyVar, indivDataset, avgDataset, indVarField, depVarField, weighting, tweezerNum )
 
@@ -40,7 +42,9 @@ function [ x,y,yerr ] = get_averages( analyVar, indivDataset, avgDataset, indVar
             num=0;
             for basename = 1:analyVar.numBasenamesAtom
                 if scanIDs(id) == analyVar.meanListVar(basename)
-                    for j = 1:indivDataset{basename}.CounterAtom
+                    %edit for length of loop
+                    indVarFieldLen = length(indivDataset{basename}.(indVarField)); % change back to counterAtom if broken
+                    for j = 1:indVarFieldLen
                         if xdata{basename}(j) == x{id}(i)
                             num = num + 1;
                             tempy(num) = ydata{basename}(j);

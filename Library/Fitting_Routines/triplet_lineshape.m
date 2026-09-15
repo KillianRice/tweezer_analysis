@@ -12,10 +12,10 @@ function funcOut = triplet_lineshape(analyVar, indivDataset, avgDataset)
         coeffs(7)*exp(-(x-coeffs(2)).^2/(2*coeffs(8)^2));
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField = 'sfiIntegral'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'OD_TotalCounts'; % The field of an indivdataset that is to be plotted on the y axis
     
     xaxis_label = 'Detuning (MHz)';
-    yaxis_label = 'MCP Counts';
+    yaxis_label = 'OD_TotalCounts';
     
     [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     coeffs = cell(analyVar.numBasenamesAtom,1);

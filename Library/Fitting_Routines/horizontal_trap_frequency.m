@@ -12,10 +12,10 @@ function funcOut = horizontal_trap_frequency(analyVar, indivDataset, avgDataset)
     % x: time (ms)
     
     %form = @(coeffs, x) coeffs(1) * sin(2*pi*coeffs(2)* x / 1000 + coeffs(3)) .* exp(-coeffs(4)*x / 1000) + coeffs(5); % your fit function here 
-    form = @(coeffs, x) coeffs(1) * sin(2*pi*coeffs(2)* x / 1000 + coeffs(3)) .* exp(-coeffs(4)*x / 1000) + coeffs(5)*x + coeffs(6); % your fit function here 
+    form = @(coeffs, x) coeffs(1) * sin(2*pi*coeffs(2)* x/1000 + coeffs(3)) .* exp(-coeffs(4)*x/1000 ) + coeffs(5)*x + coeffs(6); % your fit function here 
     
     indVarField = 'imagevcoAtom'; % independent variable
-    depVarField = 'cloudRadX'; % dependent variable
+    depVarField = 'cntrY'; % dependent variable
     
     %% initial guess code
     % fill in this function to estimate the values of the fit parameters,
@@ -25,10 +25,10 @@ function funcOut = horizontal_trap_frequency(analyVar, indivDataset, avgDataset)
 %         initialguess = zeros(5,1);
         initialguess = zeros(6,1);
         initialguess(1) = (max(ydata)-min(ydata))/2;
-        initialguess(2) = 100;
-        initialguess(3) = 1.5;
-        initialguess(4) = 100;
-        initialguess(5) = 0.1;
+        initialguess(2) = 53;
+        initialguess(3) = 0;
+        initialguess(4) = 0;
+        initialguess(5) = 0;
         initialguess(6) = mean(ydata);
 
         
@@ -61,8 +61,8 @@ function funcOut = horizontal_trap_frequency(analyVar, indivDataset, avgDataset)
                         'DataPlotFunction', @myDataPlot,...
                         'AnnotateFunction', @myAnnotate,...
                         'XAxisLabel' , 'Time (ms)',...
-                        'YAxisLabel', 'Horizontal Displacement (px)',...
-                        'PlotAll', 'true');
+                        'PlotAll', 'true',...
+                        'FitTitle', 'Trap Frequency');
     
     base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, @x0, options)
 
@@ -82,11 +82,17 @@ function h = myDataPlot(x,y,i,analyVar)
     'Color', analyVar.COLORS(i,:));
 end
 
-function an = myAnnotate(coeffs)
+% function an = myAnnotate(coeffs)
+%     dim = [0.2, 0.2, 0.3, 0.3];
+%     str = strcat('Trap Frequency: ', num2str(coeffs(2),'%0.2f Hz'));
+%     an = annotation('textbox', dim, 'String', str, 'FitBoxToText', 'on',...
+%         'BackgroundColor','w');
+% end
+
+function an = myAnnotate(coeffs,uncs,coeffNames,coeffUnits)
     dim = [0.2, 0.2, 0.3, 0.3];
-    str = strcat('Trap Frequency: ', num2str(coeffs(2),'%0.2f Hz'));
-    an = annotation('textbox', dim, 'String', str, 'FitBoxToText', 'on',...
+    str1 = strcat('Trap Frequency: ', num2str(coeffs(2),'%0.2f Hz'));
+    an = annotation('textbox', dim, 'String', str1, 'FitBoxToText', 'on',...
         'BackgroundColor','w');
 end
-
 

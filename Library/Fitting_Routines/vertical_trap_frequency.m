@@ -11,10 +11,12 @@ function funcOut = vertical_trap_frequency(analyVar, indivDataset, avgDataset)
     % coeffs(5): Offset
     % x: time (ms)
     
-    form = @(coeffs, x) coeffs(1) * sin(2*pi*coeffs(2)* x / 1000 + coeffs(3)) .* exp(-coeffs(4)*x / 1000) + coeffs(5); % your fit function here 
+    %form = @(coeffs, x) coeffs(1) * sin( 2*pi*coeffs(2)* x / 1000 + coeffs(3)) .* exp(-coeffs(4)*x / 1000) + coeffs(5); % your fit function here 
+    form = @(coeffs, x) coeffs(1) * sin(2 *2*pi*coeffs(2)* x / 1000 + coeffs(3)) .* exp(-coeffs(4)*x / 1000) + coeffs(5); % NOTE OMEGA * 2
     
     indVarField = 'imagevcoAtom'; % independent variable
-    depVarField = 'cntrY'; % dependent variable
+    depVarField = 'OD_TotalCounts';
+    %depVarField = 'cntrY'; % dependent variable
     
     %% initial guess code
     % fill in this function to estimate the values of the fit parameters,
@@ -23,7 +25,7 @@ function funcOut = vertical_trap_frequency(analyVar, indivDataset, avgDataset)
     function initialguess = x0(xdata, ydata)
         initialguess = zeros(5,1);
         initialguess(1) = (max(ydata)-min(ydata))/2;
-        initialguess(2) = 82;
+        initialguess(2) = 6000;
         initialguess(3) = 0;
         initialguess(4) = 0;
         initialguess(5) = mean(ydata);
@@ -54,6 +56,7 @@ function funcOut = vertical_trap_frequency(analyVar, indivDataset, avgDataset)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     options = struct('PlotInitialGuess', false,...
+                        'PlotIndivFits' , false,...
                         'DataPlotFunction', @myDataPlot,...
                         'AnnotateFunction', @myAnnotate,...
                         'XAxisLabel' , 'Time (ms)',...

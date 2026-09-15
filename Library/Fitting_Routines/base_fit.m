@@ -1,5 +1,12 @@
-function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, x0, useroptions)
+function [xav,yav,yer,coefflist,coefflist_err,avg_fit_coeffs_twzr] = base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField, x0, useroptions)
     
+    %%default outputs
+    xav = 0;
+    yav = 0;
+    yer = 0;
+    coefflist = 0;    
+    coefflist_err = 0;
+
     st = dbstack;
     call = st(2).name;
     %%%%% set up options and plotting functions %%%%%
@@ -27,7 +34,7 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         'FitTitle', call,...
         'Statistics', 'gaussian', ...
         'PlotNormalized', false, ...
-        'PlotNormToMeasuredParams', true);
+        'PlotNormToMeasuredParams', false);
     
     if nargin > 7
         opts = fieldnames(useroptions);
@@ -75,12 +82,31 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         numTweezers = 1;
     end
 
+     %% Creating stuct to save COEFFICIENTS of fits for later plotting an analysis
+     avg_fit_coeffs_twzr = struct;
+     avg_fit_coeffs_twzr.scanIDs = cell(numTweezers,1);
+     avg_fit_coeffs_twzr.coeffs = cell(numTweezers,1);
+     avg_fit_coeffs_twzr.uncs = cell(numTweezers,1);
+     avg_fit_coeffs_twzr.numTweezers = numTweezers;
+
+
+     %% ============================================================================
+     %              BEGIN FITTING
+     %  ----------------------------------------------------------------------------
+
     for tweezerNum = 1:numTweezers
         if analyVar.UseTweezer
             fprintf('plotting tweezers %d', tweezerNum);
         end
 
-        %% Plotting Individual Fits
+        if analyVar.SkipIndivTwzrFitting && analyVar.UseTweezer
+            fprintf('Skipped tweezers %d', tweezerNum);
+            continue;
+        end
+
+        %% ============================================================================
+        %               FITS FOR EACH INDIVDATASET
+        %  ----------------------------------------------------------------------------
         if plotIndivFits
         
             [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset, tweezerNum);   %%% Added Tweezer capability
@@ -120,8 +146,8 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                         myFitLinePlot(fitx, form(coeffs{i},fitx),i,analyVar);
                     end
                     myAnnotate(coeffs{i},uncs{i}, coeffNames, coeffUnits);
-                    disp(strcat(['Fit data for ' num2str(analyVar.timevectorAtom(i))]))
-                    disp(coeffs{i})
+                    % disp(strcat(['Fit data for ' num2str(analyVar.timevectorAtom(i))]))
+                    % disp(coeffs{i})
                     xlabel(xlabeltext,'Interpreter','none');
                     ylabel(ylabeltext,'Interpreter','none');
                     legend(num2str(analyVar.timevectorAtom(i)));
@@ -137,6 +163,8 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                 hold off
             end
         
+            %% ============================================================
+            %          PLOT ALL INDIVDATASET FITS ONTO SINGLE PLOT
             if plotAll
                 figure
                 hold on
@@ -158,7 +186,10 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         
         end
         
-        %% Plotting Averaged Fits based on ImageVcoAtom
+        %% ============================================================================
+        %         FITS FOR DATA AVERAGED BASED ON SAME IMAGEVCOATOM WITHIN
+        %                   INDIVDATASETS WITH SAME SCAN IDS
+        %  ----------------------------------------------------------------------------
         
         if length(analyVar.timevectorAtom) > 1 && plotAvgFits
         
@@ -167,6 +198,8 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
             scanIDs = analyVar.uniqScanList;
             avg_coeffs = cell(length(scanIDs),1);
             avg_unc = cell(length(scanIDs),1);
+            
+
 
             %% Normalize data based on Params (E.g. AtomNum, Power, etc..)
             if plotNormToMeasuredParams
@@ -194,6 +227,7 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                 initialguess = x0(xavg{i}, yavg{i});
         
                 weights = 1./(yerr{i} + 1).^2;
+                %disp(yerr{i})
                 [avg_coeffs{i},~,~,CovB,rchisq,~] = nlinfit(xavg{i},yavg{i},form,initialguess,...
                     'Weights',weights);
                 avg_unc{i} = sqrt(diag(CovB));
@@ -206,7 +240,7 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                         if plotInitialGuess
                             defaultInitialGuessPlot(fitx, form(initialguess, fitx)/initialguess(end), i, analyVar);
                         end
-                        disp(avg_coeffs{i}(end))
+                        % disp(avg_coeffs{i}(end))
                         myAvgDataPlot(xavg{i},yavg{i}/avg_coeffs{i}(end),yerr{i}/avg_coeffs{i}(end),i,analyVar);
                         myFitLinePlot(fitx, form(avg_coeffs{i},fitx)/avg_coeffs{i}(end),i,analyVar);
                     else
@@ -222,13 +256,25 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                     legend(num2str(scanIDs(i)),'Data','Fit');
                     set(gca, 'YScale', yAxisScale);
                     set(gca, 'XScale', xAxisScale);
-                    title(strcat([fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' \nu = ',...
-                        num2str(length(xavg{i})-length(avg_coeffs{i}))]));
+                    if analyVar.UseTweezer
+                        title(strcat([' Tweezer: ', num2str(tweezerNum), ' ', fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' A\nu = ',...
+                            num2str(length(yavg{i})-length(avg_coeffs{i}))]));
+                    else
+                        title(strcat([fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' \nu = ',...
+                            num2str(length(yavg{i})-length(avg_coeffs{i}))]));
+                    end
                 hold off
         
         
             end
+
+            %Creating stuct to save fitted coefficents for later plotting
+            avg_fit_coeffs_twzr.scanIDs{tweezerNum} = scanIDs;
+            avg_fit_coeffs_twzr.coeffs{tweezerNum} = avg_coeffs;
+            avg_fit_coeffs_twzr.uncs{tweezerNum} = avg_unc;
         
+            %% ============================================================
+            %          PLOT ALL AVERAGED FITS ONTO SINGLE PLOT
             if plotAllAvgs
                 % figure
                 % hold on
@@ -267,7 +313,7 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
                             i, ...
                             analyVar);
                     else
-                                                % Plot data and keep its graphics handle for the legend
+                        % Plot data and keep its graphics handle for the legend
                         legendHandles(i) = myAvgDataPlot( ...
                             xavg{i}, ...
                             yavg{i}, ...
@@ -308,12 +354,121 @@ function [xav,yav,yer,coefflist,coefflist_err] = base_fit(analyVar, indivDataset
         coefflist_err = avg_unc;
         end
     end
+
+    %% =====================================================================
+    %
+    %     DO A BASEFIT FITTING FOR THE AVERAGE OF ALL TWEEZER SPOTS
+    %         (ABOVE WAS DOWN FOR EACH INDIVIDUAL TWEEZER SPOT)
+    if analyVar.UseTweezer && analyVar.avgTweezerBasefit
+            scanIDs = analyVar.uniqScanList;
+            coeffs = cell(length(scanIDs),1);
+            uncs = cell(length(scanIDs),1);
+            xdata = avgDataset.ODCountsX;
+            ydata = avgDataset.ODCountsY;
+            yerr = avgDataset.ODCountsErr;
+    
+            for i = 1:length(scanIDs)
+
+                % try to correct for data that are not the same size
+                if size(xdata{i}) ~= size(ydata{i})
+                    warning(['Dimensions of xdata, ydata not the same. ' ...
+                        'Trying to fix, but may lead to unpredictable results.'])
+                    ydata{i} = ydata{i}';
+                end
+    
+                % fit the data
+                initialguess = x0(xdata{i},ydata{i});
+                [coeffs{i},~,~,CovB,rchisq,~] = nlinfit(xdata{i},ydata{i},form,initialguess);
+                uncs{i} = sqrt(diag(CovB)); % 1 sigma uncertainty from covariance matrix
+        
+                % plot the data
+                fitx = linspace(min(xdata{i}),max(xdata{i}),1000);
+        
+                figure
+                hold on
+                    if plotInitialGuess
+                        defaultInitialGuessPlot(fitx, form(initialguess, fitx), i, analyVar);
+                    end
+                    errorbar( ...
+                            xdata{i}, ...
+                            ydata{i}, ...
+                            yerr{i}, ...
+                            'LineStyle','none',...
+                            'Marker', 'o',...
+                            'MarkerSize', analyVar.markerSize,...
+                            'MarkerFaceColor', analyVar.COLORS(i,:),...
+                            'MarkerEdgeColor', 'k',...
+                            'Color', analyVar.COLORS(i,:));
+                    myFitLinePlot(fitx, form(coeffs{i},fitx),i,analyVar);
+                    myAnnotate(coeffs{i},uncs{i}, coeffNames, coeffUnits);
+                    % disp(strcat(['Fit data for ' num2str(analyVar.timevectorAtom(i))]))
+                    % disp(coeffs{i})
+                    xlabel(xlabeltext,'Interpreter','none');
+                    ylabel(ylabeltext,'Interpreter','none');
+                    legend(num2str(analyVar.timevectorAtom(i)));
+                    set(gca, 'YScale', yAxisScale);
+                    set(gca, 'XScale', xAxisScale);
+                    title(strcat(['Avg All Twzr', fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' A\nu = ',...
+                        num2str(length(ydata{i})-length(coeffs{i}))]));
+                hold off
+            end
+
+                figure
+                hold on
+                        for i = 1:length(scanIDs)
+
+                % try to correct for data that are not the same size
+                if size(xdata{i}) ~= size(ydata{i})
+                    warning(['Dimensions of xdata, ydata not the same. ' ...
+                        'Trying to fix, but may lead to unpredictable results.'])
+                    ydata{i} = ydata{i}';
+                end
+    
+                % fit the data
+                initialguess = x0(xdata{i},ydata{i});
+                [coeffs{i},~,~,CovB,rchisq,~] = nlinfit(xdata{i},ydata{i},form,initialguess);
+                uncs{i} = sqrt(diag(CovB)); % 1 sigma uncertainty from covariance matrix
+        
+                % plot the data
+                fitx = linspace(min(xdata{i}),max(xdata{i}),1000);
+ 
+                                                % Plot data and keep its graphics handle for the legend
+                        legendHandles(i) = myAvgDataPlot( ...
+                            xdata{i}, ...
+                            ydata{i}, ...
+                            yerr{i}, ...
+                            i, ...
+                            analyVar);
+                    myFitLinePlot(fitx, form(coeffs{i},fitx),i,analyVar);
+                    fitHandle.HandleVisibility = 'off';
+                
+                    legendLabels{i} = num2str(scanIDs(i));
+                    %myAnnotate(coeffs{i},uncs{i}, coeffNames, coeffUnits);
+             
+                        end
+
+                xlabel(xlabeltext,'Interpreter','none');
+                ylabel(ylabeltext,'Interpreter','none');
+                
+                set(gca,'YScale',yAxisScale);
+                set(gca,'XScale',xAxisScale);
+                title(strcat(['Avg All Twzr', fitTitle]));
+                
+                legend( ...
+                    legendHandles, ...
+                    legendLabels, ...
+                    'Location','best');
+                        hold off
+    end
   
 end
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ==========================================
+%       HELPER FUNCTIONS
+%  ==========================================
 function h = defaultDataPlot(x,y,i,analyVar)
     h = plot(x,y,...
     'LineStyle','none',...
