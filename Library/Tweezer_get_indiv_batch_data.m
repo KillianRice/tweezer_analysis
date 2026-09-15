@@ -1,0 +1,130 @@
+function indivDataset = Tweezer_get_indiv_batch_data(analyVar)
+% Reads the master file list provided from AnalysisVariables (in analyVar) and
+% opens each dataset batch file to create the dataset variables and the
+% BackgroundAll matrix
+%
+% INPUTs:
+%   analyVar - Structure from AnalysisVariables which enumerates all the
+%              variables needed for the analysis
+%
+% OUTPUTS:
+%   indivDataset - a cell of structures containing the individual dataset variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Loop through each batch file listed in analyVar.basenamevectorAtom
+indivDataset = cell(analyVar.numBasenamesAtom,1);
+
+%% Print Information about what is being analyzed and how
+disp(['Isotope is ' num2str(analyVar.isotope) 'Sr'])
+disp(['Analyzing ' num2str(analyVar.numBasenamesAtom) ' scans'])
+if analyVar.UseMCS
+    disp('Analysing SFI')
+end
+if analyVar.UseImages
+    disp('Analysing Images')
+end
+    
+for basenameNum = 1:analyVar.numBasenamesAtom
+    % Find basename for background
+    f = regexp(analyVar.basenamevectorBack,[char(analyVar.basenamevectorAtom(basenameNum)) '.*'],'match'); 
+    f = [f{:}];
+    %%%catch error about reference non-cell array when no names found in background file
+    
+    batchfileAtom   = [analyVar.dataDir char(analyVar.basenamevectorAtom(basenameNum)) '.batch']; % current atom batchfile name
+    batchfileBack   = [analyVar.dataDir char(analyVar.basenamevectorAtom(basenameNum)) '.batch'];                                           % current background batchfile name
+    batchfilePico   = [analyVar.dataDir char(analyVar.basenamevectorAtom(basenameNum)) '_pico.batch'];  % current pico batch file
+    batchfileSR400  = [analyVar.dataDir char(analyVar.basenamevectorAtom(basenameNum)) '_sr400_counts.dat'];
+    batchfileMCS    = [analyVar.dataDir char(analyVar.basenamevectorAtom{basenameNum}) '_MCS.batch'];
+    
+    
+    % print batch name
+    disp(char(analyVar.basenamevectorAtom(basenameNum)));
+    
+    batchLineFormat = '%q%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%f%{yyyy.MM.dd-HH:mm:ss}D';
+    %batch line format reads as follows:
+    %Scan name and image number \t independent parameter value \t a bunch
+    %of old stuff up to "wavemeteroff" \t 3 beam vca 1 static voltage value
+    %\t 3 beam vca 2 static voltage value \t intial evaporation voltage \t
+    %final evaporation voltage \t evaporation time constant \t trap depth / temperature (eta)
+    
+    picoBatchLineFormat = '%q';
+    SR400LineFormat = '%q%f%f%f';
+    MCSLineFormat = '%q%f%f%f%f%f';% file name \t independant variable
+    
+    %read in all atom files, no limit
+    
+    indivBatchAtomData = textscan(fopen(batchfileAtom), batchLineFormat,'commentstyle','%');
+    %read in all background files, no limit
+    indivBatchBackData = textscan(fopen(batchfileBack), batchLineFormat,'commentstyle','%');
+    % create structure with the variables from the filename
+    indivBatch = cell2struct(cat(2,indivBatchAtomData,indivBatchBackData),cat(2,analyVar.indivBatchAtomVar,analyVar.indivBatchBackVar),2);
+    indivBatch.CounterAtom = size(indivBatch.fileAtom,1); % determine how many atom files in batch associated with this basename
+    indivBatch.CounterBack = size(indivBatch.fileBack,1); % determine how many background files in batch associated with this basename
+%%
+    if analyVar.UseWavemeter
+        indivBatch = param_extract_ind_var_to_wavemeter(analyVar, indivBatch);
+    end
+    
+%%    
+    if analyVar.plotCounts
+        indivBatchPicoData = textscan(fopen(batchfilePico), picoBatchLineFormat, 'commentstyle', '%');
+        indivBatch.filePico = indivBatchPicoData{:}; 
+        indivBatch.CounterPico = size(indivBatch.filePico,1); % determine how many pico count files in batch
+    end
+
+    if analyVar.plotCounts_SR400
+        indivBatchSR400 = textscan(fopen(batchfileSR400), SR400LineFormat, 'commentstyle', '%');
+        indivBatch.fileSR400 = indivBatchSR400{:,1};
+        indivBatch.CounterSR400 = size(indivBatch.fileSR400,1);
+    end
+%%    
+    if analyVar.UseMCS
+        indivBatch.mcs_roiMin = analyVar.mcs_roiStart(basenameNum);
+        indivBatch.mcs_roiMax = analyVar.mcs_roiEnd(basenameNum);
+        indivBatchMCS = textscan(fopen(batchfileMCS), MCSLineFormat, 'commentstyle', '%');
+        indivBatch.fileMCS          = indivBatchMCS{:,1};
+        indivBatch.secondIndVar     = indivBatchMCS{:,2}; %array of the values of the second independant variable in a 2-D scan; e.g. the delay time of ramps when laser f is in a for loop inside a for loop over ramp delay times
+        indivBatch.CounterMCS       = indivBatch.CounterAtom;%number of entries in a batch file
+        
+        indivBatch.mcsSpectra = cell(indivBatch.CounterMCS,1);
+        for bIndex = 1:indivBatch.CounterMCS %cycle through each frequency point
+            %% Read in the MCS raw data
+            MCS_Address = [analyVar.dataDir char(indivBatch.fileMCS(bIndex))];
+            indivBatch.mcsSpectra{bIndex} = dlmread(MCS_Address, '\t');
+           
+        end
+    end
+    
+    % Subplot number for plotting program
+    [indivBatch.SubPlotRows, indivBatch.SubPlotCols] = optiSubPlotNum(indivBatch.CounterAtom);
+    
+    if analyVar.UseImages == 1
+        rawAtomImages = zeros(prod(analyVar.matrixSize), indivBatch.CounterAtom);
+        for ii = 1:indivBatch.CounterAtom
+        %for ii = 1:2
+            s = [analyVar.dataDir char(indivBatch.fileAtom(ii)) analyVar.dataAtom]; 
+            sFID = fopen(s,'rb','ieee-be');
+            fullRawImageAtom = double(fread(sFID,analyVar.matrixSize,'*int16')); 
+            fclose(sFID);
+            rawAtomImages(:,ii) = fullRawImageAtom(:);
+        end 
+        indivBatch.rawAtomImages = rawAtomImages;
+        rawBackImages = zeros(prod(analyVar.matrixSize), indivBatch.CounterBack);
+            for jj = 1: indivBatch.CounterBack
+                t = [analyVar.dataDir char(indivBatch.fileBack(jj)) analyVar.dataBack]; 
+                tFID = fopen(t,'rb','ieee-be');
+                fullRawImageBack = double(fread(tFID,analyVar.matrixSize,'*int16')); 
+                fclose(tFID);
+                rawBackImages(:,jj) = fullRawImageBack(:);
+            end
+        indivBatch.rawBackImages = rawBackImages;
+    end
+    %%%% Save the variables for each dataset into a variable containing data from all datasets listed in analyVar.basenamevectorAtom
+    indivDataset{basenameNum} = orderfields(indivBatch);
+end
+
+if analyVar.UseMCS
+    indivDataset = param_extract_sfi_integral(analyVar, indivDataset);
+end
+
+%% Clean Workspace
+fclose all;

@@ -58,7 +58,7 @@ if analyVar.UseImages
 
     %% Plot averaged Tweezer ROI counts for each individual spot
     if analyVar.plotIndivTwzrCounts
-        create_plot_IndivTwzr_AveragedCounts(analyVar, indivDataset, avgDataset, analyVar.plotRawCounts)
+        create_plot_IndivTwzr_AveragedCounts(analyVar, avgDataset, analyVar.plotRawCounts)
     end
 
     %% Plot Images of the Data

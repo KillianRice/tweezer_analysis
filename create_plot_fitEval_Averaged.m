@@ -1,228 +1,58 @@
-% function [fit2DAxH, fit1DAxH, resAxH] = create_plot_fitEval_Averaged(analyVar, avgDataset)
-% 
-% %% Figure numbers
-% figStruct.fig2DFit = analyVar.figNum.fig2DFit;
-% figStruct.figRes   = analyVar.figNum.figRes;
-% figStruct.fig1DFit = analyVar.figNum.fig1DFit;
-% figStruct.fig1DBEC = analyVar.figNum.fig1DBEC;
-% 
-% figure(figStruct.fig2DFit);
-% figure(figStruct.figRes);
-% figure(figStruct.fig1DFit);
-% 
-% if strcmpi(analyVar.InitCase,'Bimodal')
-%     figure(figStruct.fig1DBEC);
-% end
-% 
-% %% Plot layout
-% nPlots = avgDataset.CounterAtom;
-% 
-% if isfield(avgDataset,'SubPlotRows') && isfield(avgDataset,'SubPlotCols')
-%     nRows = avgDataset.SubPlotRows;
-%     nCols = avgDataset.SubPlotCols;
-% else
-%     nRows = ceil(sqrt(nPlots));
-%     nCols = ceil(nPlots/nRows);
-% end
-% 
-% %% Preallocate axes
-% [fit2DAxH, fit1DAxH, resAxH] = deal(zeros(1,nPlots));
-% 
-% %% Choose reference basename index for window sizes
-% basenameNum = 1;
-% 
-% for j = 1:nPlots
-% 
-%     %% Preallocate reconstructed fit image
-%     roiDistImage = zeros(size(avgDataset.All_OD_Image{j}));
-% 
-%     %% Smooth averaged OD image
-%     OD_Smooth = analyVar.smoothFilt(avgDataset.All_OD_Image{j}, analyVar.smoothFiltMat);
-% 
-%     %% Get ROI windows
-%     if isfield(avgDataset,'roiWin_Index')
-%         roiWin_Index = avgDataset.roiWin_Index;
-%     else
-%         error('avgDataset.roiWin_Index is missing. Save roiWin_Index into avgDataset during averaging.');
-%     end
-% 
-%     %% Retrieve fitted OD windows
-%     if isfield(analyVar,'UseTweezer') && analyVar.UseTweezer == 1
-% 
-%         OD_Image_Single = dlmread(avgDataset.avgODFiles{j});
-%     
-%         roiWin_Index = {true(size(OD_Image_Single))};
-%         fitWinSize = size(OD_Image_Single,1);
-% 
-%         OD_Fit_ImageCell = cellfun( ...
-%             @(x) reshape(OD_Image_Single(x), [1 1]*fitWinSize), ...
-%             roiWin_Index, ...
-%             'UniformOutput', 0);
-%     
-%     else
-%         OD_Fit_ImageCell = cellfun( ...
-%             @(x) reshape(avgDataset.All_OD_Image{j}(x), [1 1]*analyVar.funcFitWin(basenameNum)), ...
-%             cellfun(analyVar.fitWinLogicInd, roiWin_Index, 'UniformOutput', 0), ...
-%             'UniformOutput', 0);
-%     end
-% 
-%     %% Retrieve fit coefficients
-%     PCell = avgDataset.All_PCell{j};
-% 
-%     %% Weighting
-%     errCell = cellfun(@(x,y) get_OD_weight(x(end), y), ...
-%         PCell, OD_Fit_ImageCell, 'UniformOutput', 0);
-% 
-%     %% Generate fit model image
-%     [Xgrid,Ygrid] = meshgrid(1:fitWinSize);%analyVar.funcFitWin(basenameNum));
-% 
-%     fitDistCell = cellfun( ...
-%         @(x,y) reshape( ...
-%             feval(str2func(analyVar.fitModel), ...
-%             x(1:length(analyVar.InitCondList)), ...
-%             [Xgrid(:), Ygrid(:), y(:)]), ...
-%             [1 1]*fitWinSize), ... %analyVar.funcFitWin(basenameNum
-%         PCell, errCell, 'UniformOutput', 0);
-% 
-%     %% Insert each fit window into full ROI image
-%     for i = 1:sum(analyVar.LatticeAxesFit)
-% 
-%         roiDistTmp = roiWin_Index{i};
-% 
-%         roiDistTmp(analyVar.fitWinLogicInd(roiDistTmp)) = fitDistCell{i};
-% 
-%         roiDistImage = roiDistImage + roiDistTmp;
-%     end
-% 
-%     %% Label for this averaged point
-%     if isfield(avgDataset,'paramVals')
-%         plotLabel = sprintf('%g %s', avgDataset.paramVals(j), analyVar.xDataUnit);
-%     else
-%         plotLabel = sprintf('%s %g',analyVar.avgScanParam, avgDataset.imagevcoAtom(j));
-%     end
-% 
-%     %% Plot 2D fit
-%     set(0,'CurrentFigure',figStruct.fig2DFit)
-%     fit2DAxH(j) = subplot(nRows,nCols,j);
-% 
-%     pcolor(roiDistImage);
-%     shading flat;
-%     colorbar;
-%     title(plotLabel);
-%     grid off;
-% 
-%     if j == nPlots
-%         set(gcf,'Name','2D Cloud Fit: Averaged Scans');
-%         mtit('2D Cloud Fit: Averaged Scans','FontSize',16,'zoff',.025,'xoff',-.01);
-%     end
-% 
-%     %% Plot residuals
-%     set(0,'CurrentFigure',figStruct.figRes)
-%     resAxH(j) = subplot(nRows,nCols,j);
-% 
-%     pcolor(avgDataset.All_OD_Image{j} - roiDistImage);
-%     shading flat;
-%     colorbar;
-%     title(plotLabel);
-%     grid off;
-% 
-%     if j == nPlots
-%         set(gcf,'Name','Residuals: Averaged Scans');
-%         mtit('Residuals: Averaged Scans','FontSize',16,'zoff',.025,'xoff',-.01);
-%     end
-% 
-%     %% Plot 1D cross sections
-%     set(0,'CurrentFigure',figStruct.fig1DFit)
-% 
-%     CloudCntr = round( ...
-%         (analyVar.roiWinRadAtom(basenameNum) - ...
-%         (analyVar.funcFitWin(basenameNum) - 1)/2) + ...
-%         [avgDataset.All_fitParams{j}{1}.xCntr, ...
-%          avgDataset.All_fitParams{j}{1}.yCntr]);
-% 
-%     % Clamp center to image bounds
-%     CloudCntr(1) = max(1, min(size(avgDataset.All_OD_Image{j},2), CloudCntr(1)));
-%     CloudCntr(2) = max(1, min(size(avgDataset.All_OD_Image{j},1), CloudCntr(2)));
-% 
-%     OD_1D_Xdata = OD_Smooth(:,CloudCntr(1));
-%     OD_1D_Ydata = OD_Smooth(CloudCntr(2),:);
-% 
-%     OD_1D_Xfit = roiDistImage(:,CloudCntr(1));
-%     OD_1D_Yfit = roiDistImage(CloudCntr(2),:);
-% 
-%     fit1DAxH(j) = subplot(nRows,nCols,j);
-% 
-%     hold on;
-%     grid off;
-% 
-%     plot(OD_1D_Xdata,'c.');
-%     plot(OD_1D_Ydata,'g.');
-%     plot(OD_1D_Xfit,'k');
-%     plot(OD_1D_Yfit,'r');
-% 
-%     title(sprintf('%s [%g,%g]', plotLabel, CloudCntr(1), CloudCntr(2)));
-% 
-%     xlim(mean(CloudCntr) + [-1 1]*analyVar.roiWinRadAtom(basenameNum));
-% 
-%     ylim([-0.1, ...
-%         max(max([OD_1D_Xdata; OD_1D_Ydata'; OD_1D_Xfit; OD_1D_Yfit'])) + 0.1]);
-% 
-%     if j == nPlots
-%         legend('y data','x data','y fit','x fit');
-%         set(gcf,'Name','1D Fit: Averaged Scans');
-% 
-%         mtit(['Cross-Section of Averaged Fit using ' ...
-%             strrep(analyVar.fitModel, analyVar.InitCase, [analyVar.InitCase ' '])], ...
-%             'FontSize',16,'zoff',.025,'xoff',-.01);
-%     end
-% 
-% end
-% 
-% end
-
 function [fit2DAxH,fit1DAxH,resAxH] = ...
     create_plot_fitEval_Averaged(analyVar,avgDataset)
 % Plot fitted averaged OD images.
 %
-% Supports:
+% This function plots the averaged images produced by
+% imagefit_NumDistFit_Averaged in scan-parameter mode.
 %
-%   avgDataset.AveragedFitMode = 'scanParameter'
+% For each averaged image, it creates:
+%   1. Averaged OD image
+%   2. 2D fitted distribution
+%   3. Residual image
+%   4. 1D X/Y cross-sections of data and fit
 %
-%   avgDataset.AveragedFitMode = 'allImagesByTweezer'
+% Required avgDataset fields:
+%   avgDataset.All_OD_Image
+%   avgDataset.All_PCell
+%
+% Optional fields used for labeling/layout:
+%   avgDataset.sourceInfo
+%   avgDataset.paramVals
+%   avgDataset.imagevcoAtom
+%   avgDataset.SubPlotRows
+%   avgDataset.SubPlotCols
 
-%% Determine plotting mode
-if isfield(avgDataset,'AveragedFitMode') && ...
-        ~isempty(avgDataset.AveragedFitMode)
 
-    fitMode = avgDataset.AveragedFitMode;
+%% ================================================================
+%  1. COLLECT DATA TO BE PLOTTED
+%  ================================================================
 
-elseif isfield(analyVar,'AveragedFitMode') && ...
-        ~isempty(analyVar.AveragedFitMode)
-
-    fitMode = analyVar.AveragedFitMode;
-
-else
-
-    fitMode = 'scanParameter';
-
-end
-
-%% Build a common plotting collection
 plotData = get_averaged_fit_plot_data( ...
-    analyVar,avgDataset,fitMode);
+    analyVar, ...
+    avgDataset);
 
 nPlots = plotData.nPlots;
 
 if nPlots == 0
-    error('No fitted averaged images are available to plot.');
+
+    error( ...
+        'No fitted averaged images are available to plot.');
+
 end
 
-%% Figure numbers
-figStruct.fig2DFit = analyVar.figNum.fig2DFit;
-figStruct.figRes = analyVar.figNum.figRes;
-figStruct.fig1DFit = analyVar.figNum.fig1DFit;
-figStruct.fig1DBEC = analyVar.figNum.fig1DBEC;
+
+%% ================================================================
+%  2. FIGURE NUMBERS
+%  ================================================================
+
+figStruct.fig2DFit   = analyVar.figNum.fig2DFit;
+figStruct.figRes      = analyVar.figNum.figRes;
+figStruct.fig1DFit    = analyVar.figNum.fig1DFit;
+figStruct.fig1DBEC    = analyVar.figNum.fig1DBEC;
 figStruct.avgODImages = analyVar.figNum.avgODImages;
+
+
+% Clear/reuse the existing figures.
 
 figure(figStruct.avgODImages);
 clf;
@@ -236,20 +66,30 @@ clf;
 figure(figStruct.fig1DFit);
 clf;
 
+
+% Only create/use the BEC figure for bimodal fits.
+
 if strcmpi(analyVar.InitCase,'Bimodal')
+
     figure(figStruct.fig1DBEC);
+
 end
 
-%% Plot layout
-if strcmpi(fitMode,'scanParameter') && ...
-        isfield(avgDataset,'SubPlotRows') && ...
+
+%% ================================================================
+%  3. DETERMINE SUBPLOT LAYOUT
+%  ================================================================
+
+if isfield(avgDataset,'SubPlotRows') && ...
         isfield(avgDataset,'SubPlotCols') && ...
-        avgDataset.SubPlotRows*avgDataset.SubPlotCols >= nPlots
+        avgDataset.SubPlotRows * avgDataset.SubPlotCols >= nPlots
 
     nRows = avgDataset.SubPlotRows;
     nCols = avgDataset.SubPlotCols;
 
 else
+
+    % Automatically choose a roughly square layout.
 
     nRows = floor(sqrt(nPlots));
     nRows = max(nRows,1);
@@ -258,31 +98,64 @@ else
 
 end
 
-%% Preallocate axes
-avgImageAxH = gobjects(1,nPlots);
-fit2DAxH = gobjects(1,nPlots);
-fit1DAxH = gobjects(1,nPlots);
-resAxH = gobjects(1,nPlots);
 
-%% Store images for global color scales
-fitImageCell = cell(nPlots,1);
+%% ================================================================
+%  4. PREALLOCATE AXES HANDLES
+%  ================================================================
+
+avgImageAxH = gobjects(1,nPlots);
+fit2DAxH    = gobjects(1,nPlots);
+fit1DAxH    = gobjects(1,nPlots);
+resAxH      = gobjects(1,nPlots);
+
+
+%% ================================================================
+%  5. PREPARE STORAGE FOR GLOBAL COLOR LIMITS
+%  ================================================================
+%
+% The color scale will be the same for every image in a given
+% figure. This makes it easier to compare the different scan
+% parameter values.
+
+fitImageCell      = cell(nPlots,1);
 residualImageCell = cell(nPlots,1);
 
-%% First pass: reconstruct all fitted images
+
+%% ================================================================
+%  6. FIRST PASS: RECONSTRUCT ALL FITTED IMAGES
+%  ================================================================
+%
+% We do this before plotting so that the global color limits can
+% be calculated from every image.
+
 for j = 1:nPlots
 
     OD_Image = plotData.images{j};
-    PCell = plotData.PCell{j};
+    PCell    = plotData.PCell{j};
+
+
+    % Skip entries that do not contain valid data.
 
     if isempty(OD_Image) || isempty(PCell)
+
         continue;
+
     end
 
-    basenameNum = plotData.referenceBasenameNums(j);
+
+    %% Determine which original image geometry to use
+
+    basenameNum = ...
+        plotData.referenceBasenameNums(j);
 
     if isnan(basenameNum) || basenameNum < 1
+
         basenameNum = 1;
+
     end
+
+
+    %% Reconstruct the fitted 2D distribution
 
     [roiDistImage,OD_Fit_ImageCell] = ...
         reconstruct_fit_image( ...
@@ -291,81 +164,184 @@ for j = 1:nPlots
             PCell, ...
             basenameNum);
 
-    fitImageCell{j} = roiDistImage;
-    residualImageCell{j} = OD_Image-roiDistImage;
 
-    plotData.fitWindowCells{j} = OD_Fit_ImageCell;
+    %% Store fit and residual
+
+    fitImageCell{j} = roiDistImage;
+
+    residualImageCell{j} = ...
+        OD_Image - roiDistImage;
+
+
+    %% Keep the fit-window information
+
+    plotData.fitWindowCells{j} = ...
+        OD_Fit_ImageCell;
 
 end
 
-%% Compute common color limits
-fitCLim = get_global_image_limits(fitImageCell);
-resCLim = get_symmetric_global_image_limits(residualImageCell);
-avgImageCLim = get_global_image_limits(plotData.images);
 
-%% Plot each result
+%% ================================================================
+%  7. CALCULATE GLOBAL COLOR LIMITS
+%  ================================================================
+
+% Color scale for fitted images.
+
+fitCLim = ...
+    get_global_image_limits(fitImageCell);
+
+
+% Symmetric color scale for residuals.
+
+resCLim = ...
+    get_symmetric_global_image_limits( ...
+        residualImageCell);
+
+
+% Color scale for averaged OD images.
+
+avgImageCLim = ...
+    get_global_image_limits( ...
+        plotData.images);
+
+
+%% ================================================================
+%  8. PLOT EACH AVERAGED RESULT
+%  ================================================================
+
 for j = 1:nPlots
 
+    %% ------------------------------------------------------------
+    % Retrieve data for this scan point
+    % -------------------------------------------------------------
+
     OD_Image = plotData.images{j};
-    PCell = plotData.PCell{j};
+    PCell    = plotData.PCell{j};
+
     roiDistImage = fitImageCell{j};
 
-    if isempty(OD_Image) || ...
-            isempty(PCell) || ...
-            isempty(roiDistImage)
 
-        continue;
+    % Empty data should normally have been caught during the first
+    % pass. Throw an explicit error here so the problem is obvious.
+
+    if isempty(OD_Image) || isempty(PCell)
+
+        error( ...
+            'Plot %d has empty data: OD_Image=%d, PCell=%d', ...
+            j, ...
+            isempty(OD_Image), ...
+            isempty(PCell));
 
     end
 
-    residualImage = residualImageCell{j};
 
-    basenameNum = plotData.referenceBasenameNums(j);
+    residualImage = ...
+        residualImageCell{j};
+
+
+    %% ------------------------------------------------------------
+    % Recover original-image geometry
+    % -------------------------------------------------------------
+
+    basenameNum = ...
+        plotData.referenceBasenameNums(j);
 
     if isnan(basenameNum) || basenameNum < 1
+
         basenameNum = 1;
+
     end
 
-    plotLabel = plotData.labels{j};
 
-    %% Plot saved averaged OD image
-    set(0,'CurrentFigure',figStruct.avgODImages);
+    %% ------------------------------------------------------------
+    % Get plot label
+    % -------------------------------------------------------------
 
-    avgImageAxH(j) = subplot(nRows,nCols,j);
+    plotLabel = ...
+        plotData.labels{j};
+
+
+    %% ============================================================
+    % 8A. PLOT AVERAGED OD IMAGE
+    % =============================================================
+
+    set( ...
+        0, ...
+        'CurrentFigure', ...
+        figStruct.avgODImages);
+
+
+    avgImageAxH(j) = ...
+        subplot(nRows,nCols,j);
+
 
     imagesc(OD_Image);
-    set(avgImageAxH(j),'YDir','normal');
 
-    axis(avgImageAxH(j),'image');
-    axis(avgImageAxH(j),'tight');
+    set( ...
+        avgImageAxH(j), ...
+        'YDir', ...
+        'normal');
 
-    colorbar(avgImageAxH(j));
 
-    % Apply the same color scale to every averaged OD image
+    axis( ...
+        avgImageAxH(j), ...
+        'image');
+
+    axis( ...
+        avgImageAxH(j), ...
+        'tight');
+
+
+    colorbar( ...
+        avgImageAxH(j));
+
+
+    % Apply common color scale.
+
     if all(isfinite(avgImageCLim)) && ...
             avgImageCLim(1) < avgImageCLim(2)
 
-        clim(avgImageAxH(j),avgImageCLim);
+        clim( ...
+            avgImageAxH(j), ...
+            avgImageCLim);
 
     end
 
-    xlabel(avgImageAxH(j),'Column pixel');
-    ylabel(avgImageAxH(j),'Row pixel');
+
+    xlabel( ...
+        avgImageAxH(j), ...
+        'Column pixel');
+
+    ylabel( ...
+        avgImageAxH(j), ...
+        'Row pixel');
+
 
     title( ...
         avgImageAxH(j), ...
         plotLabel, ...
         'Interpreter','none');
 
-    grid(avgImageAxH(j),'off');
-    box(avgImageAxH(j),'on');
 
-    %% Smoothed image for 1D display
+    grid( ...
+        avgImageAxH(j), ...
+        'off');
+
+    box( ...
+        avgImageAxH(j), ...
+        'on');
+
+
+    %% ============================================================
+    % 8B. CREATE SMOOTHED IMAGE FOR 1D DISPLAY
+    % =============================================================
+
     if analyVar.fitSmoothOD
 
-        OD_Smooth = analyVar.smoothFilt( ...
-            OD_Image, ...
-            analyVar.smoothFiltMat);
+        OD_Smooth = ...
+            analyVar.smoothFilt( ...
+                OD_Image, ...
+                analyVar.smoothFiltMat);
 
     else
 
@@ -373,104 +349,251 @@ for j = 1:nPlots
 
     end
 
-    %% Plot 2D fitted distribution
-    set(0,'CurrentFigure',figStruct.fig2DFit);
 
-    fit2DAxH(j) = subplot(nRows,nCols,j);
+    %% ============================================================
+    % 8C. PLOT 2D FIT
+    % =============================================================
+
+    set( ...
+        0, ...
+        'CurrentFigure', ...
+        figStruct.fig2DFit);
+
+
+    fit2DAxH(j) = ...
+        subplot(nRows,nCols,j);
+
 
     imagesc(roiDistImage);
-    set(gca,'YDir','normal');
+
+    set( ...
+        fit2DAxH(j), ...
+        'YDir', ...
+        'normal');
+
 
     axis image tight;
 
     colorbar;
 
-    if all(isfinite(fitCLim)) && fitCLim(1) < fitCLim(2)
-        clim(fit2DAxH(j),fitCLim);
+
+    % Apply common fit color scale.
+
+    if all(isfinite(fitCLim)) && ...
+            fitCLim(1) < fitCLim(2)
+
+        clim( ...
+            fit2DAxH(j), ...
+            fitCLim);
+
     end
+
 
     xlabel('Column pixel');
     ylabel('Row pixel');
 
-    title(plotLabel,'Interpreter','none');
+    title( ...
+        plotLabel, ...
+        'Interpreter','none');
 
     grid off;
     box on;
 
-    %% Plot residual
-    set(0,'CurrentFigure',figStruct.figRes);
 
-    resAxH(j) = subplot(nRows,nCols,j);
+    %% ============================================================
+    % 8D. PLOT RESIDUAL
+    % =============================================================
+
+    set( ...
+        0, ...
+        'CurrentFigure', ...
+        figStruct.figRes);
+
+
+    resAxH(j) = ...
+        subplot(nRows,nCols,j);
+
 
     imagesc(residualImage);
-    set(gca,'YDir','normal');
+
+    set( ...
+        resAxH(j), ...
+        'YDir', ...
+        'normal');
+
 
     axis image tight;
 
     colorbar;
 
-    if all(isfinite(resCLim)) && resCLim(1) < resCLim(2)
-        clim(resAxH(j),resCLim);
+
+    % Use one symmetric color scale for all residuals.
+
+    if all(isfinite(resCLim)) && ...
+            resCLim(1) < resCLim(2)
+
+        clim( ...
+            resAxH(j), ...
+            resCLim);
+
     end
+
 
     xlabel('Column pixel');
     ylabel('Row pixel');
 
-    title(plotLabel,'Interpreter','none');
+    title( ...
+        plotLabel, ...
+        'Interpreter','none');
 
     grid off;
     box on;
 
-    %% Determine fitted cloud center
-    CloudCntr = get_fit_center_from_pcell( ...
-        analyVar, ...
-        PCell, ...
-        size(OD_Image), ...
-        basenameNum, ...
-        strcmpi(fitMode,'allImagesByTweezer') || ...
-            (isfield(analyVar,'UseTweezer') && ...
-             analyVar.UseTweezer == 1));
 
-    %% Clamp center to image bounds
+    %% ============================================================
+    % 8E. DETERMINE FITTED CLOUD CENTER
+    % =============================================================
+
+    CloudCntr = ...
+        get_fit_center_from_pcell( ...
+            analyVar, ...
+            PCell, ...
+            size(OD_Image), ...
+            basenameNum, ...
+            isfield(analyVar,'UseTweezer') && ...
+            analyVar.UseTweezer == 1);
+
+
+    %% Clamp center to image boundaries
+
     CloudCntr(1) = max( ...
-        1,min(size(OD_Image,2),round(CloudCntr(1))));
+        1, ...
+        min( ...
+            size(OD_Image,2), ...
+            round(CloudCntr(1))));
+
 
     CloudCntr(2) = max( ...
-        1,min(size(OD_Image,1),round(CloudCntr(2))));
+        1, ...
+        min( ...
+            size(OD_Image,1), ...
+            round(CloudCntr(2))));
 
-    %% Extract 1D cross sections
-    OD_1D_Xdata = OD_Smooth(:,CloudCntr(1));
-    OD_1D_Ydata = OD_Smooth(CloudCntr(2),:);
 
-    OD_1D_Xfit = roiDistImage(:,CloudCntr(1));
-    OD_1D_Yfit = roiDistImage(CloudCntr(2),:);
+    %% ============================================================
+    % 8F. EXTRACT 1D DATA AND FIT CROSS-SECTIONS
+    % =============================================================
 
-    %% Plot 1D cross sections
-    set(0,'CurrentFigure',figStruct.fig1DFit);
+    % X direction / column through cloud center.
+    
+    if isfield(analyVar,'dimenReduc1D') && ...
+            analyVar.dimenReduc1D == 1
+    
+        %% ------------------------------------------------------------
+        %  Integrated profiles
+        % ------------------------------------------------------------
+    
+        OD_1D_Xdata = sum(OD_Smooth,1);
+        OD_1D_Ydata = sum(OD_Smooth,2)';
+    
+        %% Evaluate the fitted 2D model and integrate it
+    
+        OD_1D_Xfit = sum(roiDistImage,1);
+        OD_1D_Yfit = sum(roiDistImage,2)';
+    
+    else
+    
+        %% ------------------------------------------------------------
+        %  Existing center cross-sections
+        % ------------------------------------------------------------
+    
+        OD_1D_Xdata = ...
+            OD_Smooth(:,CloudCntr(1));
+    
+        OD_1D_Xfit = ...
+            roiDistImage(:,CloudCntr(1));
+    
+    
+        OD_1D_Ydata = ...
+            OD_Smooth(CloudCntr(2),:);
+    
+        OD_1D_Yfit = ...
+            roiDistImage(CloudCntr(2),:);
+    
+    end
 
-    fit1DAxH(j) = subplot(nRows,nCols,j);
+
+    %% ============================================================
+    % 8G. PLOT 1D CROSS-SECTIONS
+    % =============================================================
+
+    set( ...
+        0, ...
+        'CurrentFigure', ...
+        figStruct.fig1DFit);
+
+
+    fit1DAxH(j) = ...
+        subplot(nRows,nCols,j);
+
 
     hold on;
 
-    plot(OD_1D_Xdata,'c.');
-    plot(OD_1D_Ydata,'g.');
 
-    plot(OD_1D_Xfit,'k');
-    plot(OD_1D_Yfit,'r');
+    % Experimental data.
 
-    title( ...
-        sprintf( ...
-            '%s, center [%d,%d]', ...
-            plotLabel, ...
-            CloudCntr(1), ...
-            CloudCntr(2)), ...
-        'Interpreter','none');
+    plot( ...
+        OD_1D_Xdata, ...
+        'k.','MarkerSize', 15);
 
-    xlabel('Pixel');
-    ylabel('OD');
+    plot( ...
+        OD_1D_Ydata, ...
+        'r.','MarkerSize', 15);
+
+
+    % Fitted distributions.
+
+    plot( ...
+        OD_1D_Xfit, ...
+        'k');
+
+    plot( ...
+        OD_1D_Yfit, ...
+        'r');
+
+
+    if isfield(analyVar,'dimenReduc1D') && ...
+            analyVar.dimenReduc1D == 1
+    
+        title( ...
+            sprintf( ...
+                '%s, integrated X/Y profiles', ...
+                plotLabel), ...
+            'Interpreter','none');
+            xlabel('Pixel');
+            ylabel('Integrated OD');
+    
+    else
+    
+        title( ...
+            sprintf( ...
+                '%s, center [%d,%d]', ...
+                plotLabel, ...
+                CloudCntr(1), ...
+                CloudCntr(2)), ...
+            'Interpreter','none');
+        xlabel('Pixel');
+        ylabel('OD');
+    
+    end
 
     grid off;
     box on;
+
+
+    %% ------------------------------------------------------------
+    % Automatically determine useful Y limits
+    % -------------------------------------------------------------
 
     yValues = [
         OD_1D_Xdata(:)
@@ -479,13 +602,18 @@ for j = 1:nPlots
         OD_1D_Yfit(:)
         ];
 
-    validY = yValues(isfinite(yValues));
+
+    validY = ...
+        yValues(isfinite(yValues));
+
 
     if ~isempty(validY)
 
-        yPadding = 0.05*max( ...
-            max(validY)-min(validY), ...
-            1e-6);
+        yPadding = ...
+            0.05 * max( ...
+                max(validY)-min(validY), ...
+                1e-6);
+
 
         ylim([
             min(validY)-yPadding
@@ -494,116 +622,101 @@ for j = 1:nPlots
 
     end
 
+
     hold off;
 
 end
 
-%% Figure titles
-set(0,'CurrentFigure',figStruct.avgODImages);
 
-if strcmpi(fitMode,'allImagesByTweezer')
+%% ================================================================
+%  9. FIGURE TITLES
+%  ================================================================
 
-    set( ...
-        gcf, ...
-        'Name', ...
-        'Averaged OD Images: All Individual Images by Tweezer');
+%% Averaged OD image figure
 
-    mtit( ...
-        'Averaged OD Images: All Individual Images by Tweezer', ...
-        'FontSize',16, ...
-        'zoff',.025, ...
-        'xoff',-.01);
+set( ...
+    0, ...
+    'CurrentFigure', ...
+    figStruct.avgODImages);
 
-else
 
-    set( ...
-        gcf, ...
-        'Name', ...
-        'Averaged OD Images: Scan Parameters');
+set( ...
+    gcf, ...
+    'Name', ...
+    'Averaged OD Images: Scan Parameters');
 
-    mtit( ...
-        'Averaged OD Images: Scan Parameters', ...
-        'FontSize',16, ...
-        'zoff',.025, ...
-        'xoff',-.01);
 
-end
+mtit( ...
+    'Averaged OD Images: Scan Parameters', ...
+    'FontSize',16, ...
+    'zoff',.025, ...
+    'xoff',-.01);
 
-set(0,'CurrentFigure',figStruct.fig2DFit);
 
-if strcmpi(fitMode,'allImagesByTweezer')
+%% 2D fit figure
 
-    set(gcf,'Name','2D Cloud Fit: All Images Averaged by Tweezer');
+set( ...
+    0, ...
+    'CurrentFigure', ...
+    figStruct.fig2DFit);
 
-    mtit( ...
-        '2D Cloud Fit: All Images Averaged by Tweezer', ...
-        'FontSize',16, ...
-        'zoff',.025, ...
-        'xoff',-.01);
 
-else
+set( ...
+    gcf, ...
+    'Name', ...
+    '2D Cloud Fit: Averaged Scans');
 
-    set(gcf,'Name','2D Cloud Fit: Averaged Scans');
 
-    mtit( ...
-        '2D Cloud Fit: Averaged Scans', ...
-        'FontSize',16, ...
-        'zoff',.025, ...
-        'xoff',-.01);
+mtit( ...
+    '2D Cloud Fit: Averaged Scans', ...
+    'FontSize',16, ...
+    'zoff',.025, ...
+    'xoff',-.01);
 
-end
 
-set(0,'CurrentFigure',figStruct.figRes);
+%% Residual figure
 
-if strcmpi(fitMode,'allImagesByTweezer')
+set( ...
+    0, ...
+    'CurrentFigure', ...
+    figStruct.figRes);
 
-    set(gcf,'Name','Residuals: All Images Averaged by Tweezer');
 
-    mtit( ...
-        'Residuals: All Images Averaged by Tweezer', ...
-        'FontSize',16, ...
-        'zoff',.025, ...
-        'xoff',-.01);
+set( ...
+    gcf, ...
+    'Name', ...
+    'Residuals: Averaged Scans');
 
-else
 
-    set(gcf,'Name','Residuals: Averaged Scans');
+mtit( ...
+    'Residuals: Averaged Scans', ...
+    'FontSize',16, ...
+    'zoff',.025, ...
+    'xoff',-.01);
 
-    mtit( ...
-        'Residuals: Averaged Scans', ...
-        'FontSize',16, ...
-        'zoff',.025, ...
-        'xoff',-.01);
 
-end
+%% 1D fit figure
 
-set(0,'CurrentFigure',figStruct.fig1DFit);
+set( ...
+    0, ...
+    'CurrentFigure', ...
+    figStruct.fig1DFit);
 
-if strcmpi(fitMode,'allImagesByTweezer')
 
-    oneDTitle = [
-        'Cross-Sections: All Images Averaged by Tweezer using ' ...
-        strrep( ...
-            analyVar.fitModel, ...
-            analyVar.InitCase, ...
-            [analyVar.InitCase ' '])
-        ];
+oneDTitle = [
+    'Cross-Section of Averaged Fit using ' ...
+    strrep( ...
+        analyVar.fitModel, ...
+        analyVar.InitCase, ...
+        [analyVar.InitCase ' '])
+    ];
 
-    set(gcf,'Name','1D Fit: All Images Averaged by Tweezer');
 
-else
+set( ...
+    gcf, ...
+    'Name', ...
+    '1D Fit: Averaged Scans');
 
-    oneDTitle = [
-        'Cross-Section of Averaged Fit using ' ...
-        strrep( ...
-            analyVar.fitModel, ...
-            analyVar.InitCase, ...
-            [analyVar.InitCase ' '])
-        ];
-
-    set(gcf,'Name','1D Fit: Averaged Scans');
-
-end
 
 mtit( ...
     oneDTitle, ...
@@ -611,181 +724,235 @@ mtit( ...
     'zoff',.025, ...
     'xoff',-.01);
 
+
 end
 
 
 
+%% =================================================================
+%  GET DATA USED FOR PLOTTING
+%  =================================================================
 
+function plotData = ...
+    get_averaged_fit_plot_data( ...
+        analyVar,avgDataset)
+% Collect averaged OD images, fit parameters, labels, and provenance.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function plotData = get_averaged_fit_plot_data( ...
-    analyVar,avgDataset,fitMode)
 
 plotData = struct;
 
-switch lower(fitMode)
 
-    case lower('allImagesByTweezer')
+%% Make sure the required averaged data exists
 
-        if ~isfield(avgDataset,'tweezerAllImageFit')
+if ~isfield(avgDataset,'All_OD_Image')
 
-            error([ ...
-                'avgDataset.tweezerAllImageFit is missing.\n' ...
-                'Run imagefit_NumDistFit_Averaged with:\n' ...
-                'analyVar.AveragedFitMode = ''allImagesByTweezer'';']);
-
-        end
-
-        fitData = avgDataset.tweezerAllImageFit;
-
-        plotData.images = fitData.images;
-        plotData.PCell = fitData.PCell;
-
-        plotData.nPlots = fitData.numTweezers;
-
-        plotData.referenceBasenameNums = ...
-            fitData.referenceBasenameNums;
-
-        plotData.referenceImageNums = ...
-            fitData.referenceImageNums;
-
-        plotData.labels = cell(plotData.nPlots,1);
-
-        for tweezerNum = 1:plotData.nPlots
-
-            numImages = ...
-                fitData.numImagesAveraged(tweezerNum);
-
-            plotData.labels{tweezerNum} = sprintf( ...
-                'Tweezer %d, N = %d', ...
-                tweezerNum,numImages);
-
-        end
-
-    otherwise
-
-        if ~isfield(avgDataset,'All_OD_Image')
-            error('avgDataset.All_OD_Image is missing.');
-        end
-
-        if ~isfield(avgDataset,'All_PCell')
-            error('avgDataset.All_PCell is missing.');
-        end
-
-        plotData.images = avgDataset.All_OD_Image;
-        plotData.PCell = avgDataset.All_PCell;
-
-        plotData.nPlots = min( ...
-            numel(plotData.images), ...
-            numel(plotData.PCell));
-
-        plotData.referenceBasenameNums = ...
-            ones(plotData.nPlots,1);
-
-        plotData.referenceImageNums = ...
-            ones(plotData.nPlots,1);
-
-        plotData.labels = cell(plotData.nPlots,1);
-
-        for j = 1:plotData.nPlots
-
-            if isfield(avgDataset,'sourceInfo') && ...
-                    numel(avgDataset.sourceInfo) >= j && ...
-                    ~isempty(avgDataset.sourceInfo{j})
-
-                src = avgDataset.sourceInfo{j};
-
-                plotData.referenceBasenameNums(j) = ...
-                    src.basenameNums(1);
-
-                plotData.referenceImageNums(j) = ...
-                    src.imageNums(1);
-
-                if isfield(src,'tweezerNums') && ...
-                        ~isempty(src.tweezerNums)
-
-                    tweezerNum = src.tweezerNums(1);
-
-                else
-
-                    tweezerNum = get_tweezer_number_for_plot( ...
-                        j,avgDataset);
-
-                end
-
-            else
-
-                tweezerNum = get_tweezer_number_for_plot( ...
-                    j,avgDataset);
-
-            end
-
-            if isfield(avgDataset,'paramVals') && ...
-                    numel(avgDataset.paramVals) >= j
-
-                parameterValue = avgDataset.paramVals(j);
-
-            elseif isfield(avgDataset,'imagevcoAtom') && ...
-                    numel(avgDataset.imagevcoAtom) >= j
-
-                parameterValue = avgDataset.imagevcoAtom(j);
-
-            else
-
-                parameterValue = j;
-
-            end
-
-            plotData.labels{j} = sprintf( ...
-                'Tweezer %d, %s = %g %s', ...
-                tweezerNum, ...
-                analyVar.avgScanParam, ...
-                parameterValue, ...
-                analyVar.xDataUnit);
-
-        end
-
-end
-
-plotData.fitWindowCells = cell(plotData.nPlots,1);
+    error( ...
+        'avgDataset.All_OD_Image is missing.');
 
 end
 
 
+if ~isfield(avgDataset,'All_PCell')
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    error( ...
+        'avgDataset.All_PCell is missing.');
+
+end
+
+
+%% Copy the image and fit data
+
+plotData.images = ...
+    avgDataset.All_OD_Image;
+
+plotData.PCell = ...
+    avgDataset.All_PCell;
+
+
+%% Determine number of plots
+
+plotData.nPlots = min( ...
+    numel(plotData.images), ...
+    numel(plotData.PCell));
+
+
+if plotData.nPlots == 0
+
+    error( ...
+        'avgDataset contains no averaged images or fit parameters.');
+
+end
+
+
+%% Allocate provenance information
+
+plotData.referenceBasenameNums = ...
+    ones(plotData.nPlots,1);
+
+plotData.referenceImageNums = ...
+    ones(plotData.nPlots,1);
+
+plotData.labels = ...
+    cell(plotData.nPlots,1);
+
+
+%% Build labels for each averaged scan point
+
+for j = 1:plotData.nPlots
+
+
+    %% Recover source information when available
+
+    if isfield(avgDataset,'sourceInfo') && ...
+            numel(avgDataset.sourceInfo) >= j && ...
+            ~isempty(avgDataset.sourceInfo{j})
+
+        src = ...
+            avgDataset.sourceInfo{j};
+
+
+        if isfield(src,'basenameNums') && ...
+                ~isempty(src.basenameNums)
+
+            plotData.referenceBasenameNums(j) = ...
+                src.basenameNums(1);
+
+        end
+
+
+        if isfield(src,'imageNums') && ...
+                ~isempty(src.imageNums)
+
+            plotData.referenceImageNums(j) = ...
+                src.imageNums(1);
+
+        end
+
+    end
+
+
+    %% Determine scan parameter value
+
+    if isfield(avgDataset,'paramVals') && ...
+            numel(avgDataset.paramVals) >= j
+
+        parameterValue = ...
+            avgDataset.paramVals(j);
+
+    elseif isfield(avgDataset,'imagevcoAtom') && ...
+            numel(avgDataset.imagevcoAtom) >= j
+
+        parameterValue = ...
+            avgDataset.imagevcoAtom(j);
+
+    else
+
+        parameterValue = j;
+
+    end
+
+
+    %% Determine tweezer number for display
+
+    if isfield(avgDataset,'sourceInfo') && ...
+            numel(avgDataset.sourceInfo) >= j && ...
+            ~isempty(avgDataset.sourceInfo{j}) && ...
+            isfield( ...
+                avgDataset.sourceInfo{j}, ...
+                'tweezerNums') && ...
+            ~isempty( ...
+                avgDataset.sourceInfo{j}.tweezerNums)
+
+        tweezerNum = ...
+            avgDataset.sourceInfo{j}.tweezerNums(1);
+
+    elseif isfield(avgDataset,'numTweezers') && ...
+            avgDataset.numTweezers > 0
+
+        tweezerNum = ...
+            mod(j-1,avgDataset.numTweezers)+1;
+
+    else
+
+        tweezerNum = 1;
+
+    end
+
+
+    %% Create human-readable plot label
+
+    plotData.labels{j} = ...
+        sprintf( ...
+            'Tweezer %d, %s = %g %s', ...
+            tweezerNum, ...
+            analyVar.avgScanParam, ...
+            parameterValue, ...
+            analyVar.xDataUnit);
+
+end
+
+
+%% Storage for reconstructed fit windows
+
+plotData.fitWindowCells = ...
+    cell(plotData.nPlots,1);
+
+end
+
+
+
+%% =================================================================
+%  RECONSTRUCT 2D FIT IMAGE
+%  =================================================================
+
 function [roiDistImage,OD_Fit_ImageCell] = ...
     reconstruct_fit_image( ...
         analyVar,OD_Image,PCell,basenameNum)
+% Re-evaluate the saved fit parameters on the image grid.
 
-OD_Image = double(OD_Image);
 
-%% Optional smoothing is used only as model weighting input
+OD_Image = ...
+    double(OD_Image);
+
+
+%% Apply the same smoothing used during fitting
+
 if analyVar.fitSmoothOD
 
-    OD_FitInput = analyVar.smoothFilt( ...
-        OD_Image, ...
-        analyVar.smoothFiltMat);
+    OD_FitInput = ...
+        analyVar.smoothFilt( ...
+            OD_Image, ...
+            analyVar.smoothFiltMat);
 
 else
 
-    OD_FitInput = OD_Image;
+    OD_FitInput = ...
+        OD_Image;
 
 end
 
-%% Tweezer image is already a complete fit window
+
+%% Tweezer image is already the complete fit window
+
 if isfield(analyVar,'UseTweezer') && ...
         analyVar.UseTweezer == 1
 
-    fitWinSize = size(OD_Image,1);
+    fitWinSize = ...
+        size(OD_Image,1);
+
 
     if size(OD_Image,2) ~= fitWinSize
-        error('Tweezer OD image must be square.');
+
+        error( ...
+            'Tweezer OD image must be square.');
+
     end
+
 
     OD_Fit_ImageCell = {
         OD_FitInput
         };
+
 
     roiWin_Index = {
         true(size(OD_Image))
@@ -794,58 +961,75 @@ if isfield(analyVar,'UseTweezer') && ...
 else
 
     error([ ...
-        'The replacement plotting helper currently expects saved ' ...
-        'individual tweezer cuts when UseTweezer is enabled.\n' ...
-        'The original non-tweezer reconstruction path can be retained ' ...
-        'if full-cloud fitting is still required.']);
+        'The current averaged-fit plotting helper expects ' ...
+        'tweezer images with UseTweezer = 1.']);
 
 end
 
-%% Weighting
-errCell = cellfun( ...
-    @(fitParameters,fitImage) ...
-        get_OD_weight( ...
-            fitParameters(end),fitImage), ...
-    PCell, ...
-    OD_Fit_ImageCell, ...
-    'UniformOutput',false);
 
-%% Model grid
-[Xgrid,Ygrid] = meshgrid(1:fitWinSize);
+%% Calculate weighting/error image
 
-%% Evaluate model
-fitDistCell = cellfun( ...
-    @(fitParameters,fitError) reshape( ...
-        feval( ...
-            str2func(analyVar.fitModel), ...
-            fitParameters( ...
-                1:length(analyVar.InitCondList)), ...
-            [ ...
-                Xgrid(:), ...
-                Ygrid(:), ...
-                fitError(:)]), ...
-        [fitWinSize fitWinSize]), ...
-    PCell, ...
-    errCell, ...
-    'UniformOutput',false);
+errCell = ...
+    cellfun( ...
+        @(fitParameters,fitImage) ...
+            get_OD_weight( ...
+                fitParameters(end), ...
+                fitImage), ...
+        PCell, ...
+        OD_Fit_ImageCell, ...
+        'UniformOutput',false);
+
+
+%% Build model coordinate grid
+
+[Xgrid,Ygrid] = ...
+    meshgrid(1:fitWinSize);
+
+
+%% Evaluate the saved fit parameters
+
+fitDistCell = ...
+    cellfun( ...
+        @(fitParameters,fitError) ...
+            reshape( ...
+                feval( ...
+                    str2func(analyVar.fitModel), ...
+                    fitParameters( ...
+                        1:length(analyVar.InitCondList)), ...
+                    [ ...
+                        Xgrid(:), ...
+                        Ygrid(:), ...
+                        fitError(:)]), ...
+                [fitWinSize fitWinSize]), ...
+        PCell, ...
+        errCell, ...
+        'UniformOutput',false);
+
 
 %% Insert fit into image
+
 if numel(fitDistCell) == 1 && ...
         all(roiWin_Index{1}(:))
 
-    roiDistImage = fitDistCell{1};
+    roiDistImage = ...
+        fitDistCell{1};
 
 else
 
-    roiDistImage = zeros(size(OD_Image));
+    roiDistImage = ...
+        zeros(size(OD_Image));
+
 
     for fitNum = 1:numel(fitDistCell)
 
-        roiMask = roiWin_Index{fitNum};
+        roiMask = ...
+            roiWin_Index{fitNum};
 
-        roiMask(roiMask) = fitDistCell{fitNum};
+        roiMask(roiMask) = ...
+            fitDistCell{fitNum};
 
-        roiDistImage = roiDistImage+roiMask;
+        roiDistImage = ...
+            roiDistImage + roiMask;
 
     end
 
@@ -855,30 +1039,57 @@ end
 
 
 
+%% =================================================================
+%  GET FITTED CLOUD CENTER
+%  =================================================================
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function CloudCntr = get_fit_center_from_pcell( ...
-    analyVar,PCell,imageSize,basenameNum,isLocalTweezerImage)
+function CloudCntr = ...
+    get_fit_center_from_pcell( ...
+        analyVar, ...
+        PCell, ...
+        imageSize, ...
+        basenameNum, ...
+        isLocalTweezerImage)
+% Extract x/y center parameters from the fitted parameter cell.
 
-fitParameters = PCell{1};
 
-parameterNames = analyVar.InitCondList;
+fitParameters = ...
+    PCell{1};
+
+
+parameterNames = ...
+    analyVar.InitCondList;
+
 
 if isstring(parameterNames)
-    parameterNames = cellstr(parameterNames);
+
+    parameterNames = ...
+        cellstr(parameterNames);
+
 end
 
-xIndex = find( ...
-    strcmpi(parameterNames,'xCntr') | ...
-    strcmpi(parameterNames,'xCenter') | ...
-    strcmpi(parameterNames,'x0'), ...
-    1);
 
-yIndex = find( ...
-    strcmpi(parameterNames,'yCntr') | ...
-    strcmpi(parameterNames,'yCenter') | ...
-    strcmpi(parameterNames,'y0'), ...
-    1);
+%% Find X center parameter
+
+xIndex = ...
+    find( ...
+        strcmpi(parameterNames,'xCntr') | ...
+        strcmpi(parameterNames,'xCenter') | ...
+        strcmpi(parameterNames,'x0'), ...
+        1);
+
+
+%% Find Y center parameter
+
+yIndex = ...
+    find( ...
+        strcmpi(parameterNames,'yCntr') | ...
+        strcmpi(parameterNames,'yCenter') | ...
+        strcmpi(parameterNames,'y0'), ...
+        1);
+
+
+%% Fall back to image center if parameters are unavailable
 
 if isempty(xIndex) || isempty(yIndex)
 
@@ -891,20 +1102,37 @@ if isempty(xIndex) || isempty(yIndex)
 
 end
 
-fitX = fitParameters(xIndex);
-fitY = fitParameters(yIndex);
+
+%% Extract fitted center
+
+fitX = ...
+    fitParameters(xIndex);
+
+fitY = ...
+    fitParameters(yIndex);
+
+
+%% Convert coordinates if necessary
 
 if isLocalTweezerImage
 
-    % Fit coordinates already correspond to the saved tweezer cut.
-    CloudCntr = [fitX fitY];
+    % The fit coordinates already correspond to the local
+    % tweezer image.
+
+    CloudCntr = [
+        fitX
+        fitY
+        ];
 
 else
 
-    % Preserve the original full-ROI offset convention.
+    % Preserve the original full-ROI coordinate convention.
+
     CloudCntr = ...
-        (analyVar.roiWinRadAtom(basenameNum) - ...
-        (analyVar.funcFitWin(basenameNum)-1)/2) + ...
+        ( ...
+        analyVar.roiWinRadAtom(basenameNum) - ...
+        (analyVar.funcFitWin(basenameNum)-1)/2 ...
+        ) + ...
         [fitX fitY];
 
 end
@@ -913,69 +1141,121 @@ end
 
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-function colorLimits = get_global_image_limits(imageCell)
+%% =================================================================
+%  GLOBAL IMAGE COLOR LIMITS
+%  =================================================================
+
+function colorLimits = ...
+    get_global_image_limits(imageCell)
+% Find the minimum and maximum finite values across all images.
+
 
 globalMin = inf;
 globalMax = -inf;
 
+
 for j = 1:numel(imageCell)
 
-    imageData = imageCell{j};
+    imageData = ...
+        imageCell{j};
+
 
     if isempty(imageData)
+
         continue;
+
     end
 
-    validData = imageData(isfinite(imageData));
+
+    validData = ...
+        imageData(isfinite(imageData));
+
 
     if isempty(validData)
+
         continue;
+
     end
 
-    globalMin = min(globalMin,min(validData));
-    globalMax = max(globalMax,max(validData));
+
+    globalMin = ...
+        min(globalMin,min(validData));
+
+    globalMax = ...
+        max(globalMax,max(validData));
 
 end
+
+
+%% Return valid limits
 
 if isfinite(globalMin) && ...
         isfinite(globalMax) && ...
         globalMin < globalMax
 
-    colorLimits = [globalMin globalMax];
+    colorLimits = [
+        globalMin
+        globalMax
+        ];
 
 else
 
-    colorLimits = [NaN NaN];
+    colorLimits = [
+        NaN
+        NaN
+        ];
 
 end
 
 end
+
+
+
+%% =================================================================
+%  SYMMETRIC RESIDUAL COLOR LIMITS
+%  =================================================================
 
 function colorLimits = ...
     get_symmetric_global_image_limits(imageCell)
+% Find the largest absolute residual and use +/- that value.
+
 
 largestMagnitude = 0;
 
+
 for j = 1:numel(imageCell)
 
-    imageData = imageCell{j};
+    imageData = ...
+        imageCell{j};
+
 
     if isempty(imageData)
+
         continue;
+
     end
 
-    validData = imageData(isfinite(imageData));
+
+    validData = ...
+        imageData(isfinite(imageData));
+
 
     if isempty(validData)
+
         continue;
+
     end
 
-    largestMagnitude = max( ...
-        largestMagnitude, ...
-        max(abs(validData)));
+
+    largestMagnitude = ...
+        max( ...
+            largestMagnitude, ...
+            max(abs(validData)));
 
 end
+
+
+%% Return symmetric limits
 
 if largestMagnitude > 0
 
@@ -986,25 +1266,10 @@ if largestMagnitude > 0
 
 else
 
-    colorLimits = [NaN NaN];
-
-end
-
-end
-
-
-function tweezerNum = ...
-    get_tweezer_number_for_plot(j,avgDataset)
-
-if isfield(avgDataset,'numTweezers') && ...
-        avgDataset.numTweezers > 0
-
-    tweezerNum = ...
-        mod(j-1,avgDataset.numTweezers)+1;
-
-else
-
-    tweezerNum = 1;
+    colorLimits = [
+        NaN
+        NaN
+        ];
 
 end
 

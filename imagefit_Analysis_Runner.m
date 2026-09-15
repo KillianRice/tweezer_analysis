@@ -33,7 +33,7 @@ if analyVar.UseTweezer == 1
     
     % 4. Fit averaged OD images only (not really working for small images)
     if analyVar.fitODImage
-        avgDataset = imagefit_NumDistFit_Averaged(analyVar, indivDataset, avgDataset);
+        avgDataset = imagefit_NumDistFit_AveragedV2(analyVar, indivDataset, avgDataset);
     end
     
     % 5. Evaluate averaged fits

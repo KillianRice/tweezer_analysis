@@ -52,7 +52,7 @@ end
 %   Parameter 2: Tweezer 1, Tweezer 2, ..., Tweezer N
 %   etc.
 
-numStoredImages = numel(avgDataset.avgODImages);
+numStoredImages = numel(avgDataset.IndivTwzrAvgODImages);
 
 if mod(numStoredImages,numTweezers) ~= 0
     error(['The number of stored OD images (%d) is not divisible by ' ...
@@ -88,31 +88,73 @@ else
 end
 
 %% Display available parameter values
+
 fprintf('\nAvailable imagevcoAtom values:\n');
 
 for parameterIndex = 1:numParameters
+
     fprintf('  %4d: %.12g\n', ...
         parameterIndex,parameterValues(parameterIndex));
+
 end
 
 fprintf('\nEnter one or more imagevcoAtom values.\n');
+
 fprintf('Examples:\n');
 fprintf('  1.25\n');
 fprintf('  [1.25 1.50 1.75]\n');
+fprintf('  all\n');
 fprintf('Press Enter without a value to cancel plotting.\n\n');
 
-requestedValues = input('imagevcoAtom value(s) to display: ');
+%% Get valid user input
 
-if isempty(requestedValues)
-    fprintf('No images selected.\n');
-    return;
+while true
+
+    userInput = input( ...
+        'imagevcoAtom value(s) to display: ', ...
+        's');
+
+    %% Empty input = cancel
+    if isempty(strtrim(userInput))
+
+        fprintf('No images selected.\n');
+        return;
+
+    end
+
+    %% "all" = select every available value
+    if strcmpi(strtrim(userInput),'all')
+
+        requestedValues = parameterValues(:);
+
+        fprintf( ...
+            'Selecting all %d imagevcoAtom values.\n', ...
+            numel(requestedValues));
+
+        break;
+
+    end
+
+    %% Try to interpret input as numeric
+    requestedValues = str2num(userInput); %#ok<ST2NM>
+
+    if isempty(requestedValues) || ...
+            ~isnumeric(requestedValues) || ...
+            any(~isfinite(requestedValues))
+
+        fprintf('\nInvalid input.\n');
+        fprintf('Please enter numeric value(s), ''all'', or press Enter to cancel.\n\n');
+
+        continue;
+
+    end
+
+    %% Valid numeric input
+    requestedValues = requestedValues(:);
+
+    break;
+
 end
-
-if ~isnumeric(requestedValues) || any(~isfinite(requestedValues))
-    error('The requested imagevcoAtom values must be finite numeric values.');
-end
-
-requestedValues = requestedValues(:);
 
 %% Match requested values to recorded parameter values
 selectedParameterIndices = zeros(size(requestedValues));
@@ -170,7 +212,7 @@ for selectionNum = 1:numel(selectedParameterIndices)
             continue;
         end
 
-        img = avgDataset.avgODImages{imageIndex};
+        img = avgDataset.IndivTwzrAvgODImages{imageIndex};
 
         globalMin = min(globalMin, min(img(:), [], 'omitnan'));
         globalMax = max(globalMax, max(img(:), [], 'omitnan'));
@@ -210,7 +252,7 @@ for selectionNum = 1:numel(selectedParameterIndices)
             continue;
         end
 
-        thisODImage = avgDataset.avgODImages{imageIndex};
+        thisODImage = avgDataset.IndivTwzrAvgODImages{imageIndex};
 
         axH(tweezerNum) = nexttile(tiledH,tweezerNum);
 

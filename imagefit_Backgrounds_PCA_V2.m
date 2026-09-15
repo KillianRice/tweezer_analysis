@@ -103,7 +103,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         % Retrieve cloud matrix for single image
         roiImageAtom = reshape(indivDataset{basenameNum}.AtomsCloud(:,k),[1 1].*(2*analyVar.roiWinRadAtom(basenameNum) + 1));
         %   roiImageBack = reshape(BackCloudApproxState, size(roiImageAtom)); undo to go back to fitting bkg
-        roiImageBack = reshape(indivDataset{basenameNum}.AtomsCloud(:,k),[1 1].*(2*analyVar.roiWinRadAtom(basenameNum) + 1));
+        roiImageBack = reshape(indivDataset{basenameNum}.BackgroundCloud(:,k),[1 1].*(2*analyVar.roiWinRadAtom(basenameNum) + 1));
 
         % Bin and trim atoms images
         cutImageCell = TrimAndBin(analyVar,mat2cell([roiImageAtom;roiImageBack],[1 1]*size(roiImageAtom,1),size(roiImageAtom,2)));
@@ -120,7 +120,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         
             
             %OD_Image_Single = cutImageAtom - cutImageBack;
-            OD_Image_Single = cutImageAtom %%% undo to go back to fitting
+            OD_Image_Single = cutImageAtom - cutImageBack; %%% undo to go back to fitting
        
             % Subtract fitted bkg
             % bgOffset = estimate_corner_background(OD_Image_Single, analyVar.NoiseNumVec);
@@ -151,6 +151,9 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                                              y0-r:y0+r);
                 RawAtomImage_Tweezer = cutImageAtom(x0-r:x0+r, ...
                                              y0-r:y0+r);
+                RawBkgImage_Tweezer = cutImageBack(x0-r:x0+r, ...
+                                             y0-r:y0+r);
+                
 
 
                 if isempty(OD_Tweezer)
@@ -172,6 +175,14 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                     analyVar.ODimageFilename];
                 
                 dlmwrite(saveName, RawAtomImage_Tweezer, '\t');
+
+                % Save tweezer ROI raw bkg image (image 2)
+                saveName = [analyVar.analyOutDir ...
+                    char(indivDataset{basenameNum}.fileBack(k)) ...
+                    sprintf('_TweezerImg2Raw%03d',tweezerNum) ...
+                    analyVar.ODimageFilename];
+                
+                dlmwrite(saveName, RawBkgImage_Tweezer, '\t');
 
             end
         end
