@@ -32,6 +32,8 @@ allODFiles      = {};   %   name of image file used
 allTotODCounts  = [];   %   number of counts in tweezer ROI (again subtracted)
 allTotCountsImg1Raw = [];     % number of raw counts in the ROI 
 
+allIsThereAtom = []; % 0 or 1 if signal in ROI > set threshold
+
 allBasenameNums = [];   %   collecting the basename number for each entry
 allImageNums    = [];   %   collecting the appearance number of the entry within the file
 
@@ -69,6 +71,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             allTotODCounts(end+1,1) = indivDataset{basenameNum}.OD_TotalCounts(k,tweezerNum);                   % PCA Bkg Subtracted Counts (May be normalized if toggled)
             allTotCountsImg1Raw(end+1,1) = indivDataset{basenameNum}.TotalCountsImg1Raw(k,tweezerNum);     % Raw Counts in atom image
             allScanIDs(end+1,1) = scanIDs(basenameNum);
+            allIsThereAtom(end+1,1) = indivDataset{basenameNum}.isThereAtom(k,tweezerNum);
         end
     end
 end
@@ -132,6 +135,9 @@ avgDataset.IndivTwzrMeanODCounts      = [];
 avgDataset.IndivTwzrStdODCounts       = [];
 
 avgDataset.IndivTwzrNumAveraged = [];
+
+avgDataset.meanIsThereAtom = [];
+avgDataset.meanIsThereAtomStd = [];
 
 % Compatibility fields
 avgDataset.roiWin_Index = indivDataset{1}.roiWin_Index;
@@ -209,6 +215,10 @@ for p = 1:numel(uniqueVals)
 
         rawCounts = allTotImg1Counts(idx);
 
+        %% Collect isThereAtom
+
+        isThereAtom = allIsThereAtom(idx);
+
         %% Store averaged entry sorting information
         % One entry for every averaged parameter/tweezer image
 
@@ -241,6 +251,10 @@ for p = 1:numel(uniqueVals)
         avgDataset.IndivTwzrMeanODCounts(avgDatasetCounter,1) = mean(totODCounts,'omitnan');
 
         avgDataset.IndivTwzrStdODCounts(avgDatasetCounter,1) = std(totODCounts,0,'omitnan');
+
+        avgDataset.meanIsThereAtom(avgDatasetCounter,1) = mean(isThereAtom,'omitnan');
+
+        avgDataset.meanIsThereAtomErr(avgDatasetCounter,1) = std(isThereAtom,0,'omitnan') / sqrt(numel(idx));
 
         %% Store indivdataset information for each entry within the average
 
@@ -432,271 +446,9 @@ for s = 1:numScans
     avgDataset.ODCountsErr{s}  = scanODErr;
 
 end
-%  % 
-%  % % Number of groups
-%  % n = numTweezers;
-%  % numGroups = avgDatasetCounter / n;
-%  % 
-%  % % Reshape into groups
-%  % MeanRawODCountGroups = reshape(avgDataset.IndivTwzrMeanRawODCounts, n, numGroups);
-%  % stdRawODCountGroups  = reshape(avgDataset.IndivTwzrStdRawODCounts,  n, numGroups);
-%  % 
-%  % MeanODCountGroups = reshape(avgDataset.IndivTwzrMeanODCounts, n, numGroups);
-%  % stdODCountGroups  = reshape(avgDataset.IndivTwzrStdODCounts,  n, numGroups);
-%  % 
-%  % % Mean of each group
-%  % AllTwzrMeanRawODCounts = mean(MeanRawODCountGroups, 1)';
-%  % AllTwzrMeanODCounts = mean(MeanODCountGroups, 1)';
-%  % 
-%  % % Propagated standard error of each mean
-%  % AllTwzrStdRawODCounts = sqrt(sum(stdRawODCountGroups .^2, 1))' / n;
-%  % AllTwzrStdODCounts = sqrt(sum(stdODCountGroups.^2, 1))' / n;
-%  % 
-%  % avgDataset.AllTwzrMeanRawODCounts   = AllTwzrMeanRawODCounts;
-%  % avgDataset.AllTwzrStdRawODCounts    = AllTwzrStdRawODCounts;
-%  % avgDataset.AllTwzrMeanODCounts      = AllTwzrMeanODCounts;
-%  % avgDataset.AllTwzrStdODCounts       = AllTwzrStdODCounts;
-%  
-%  %% Average the mean counts across all tweezers with the same paramVal
-%  %
-%  % For each tweezer, the stored STD is the scatter of the individual
-%  % measurements contributing to that tweezer's average.
-%  %
-%  % First convert each tweezer's STD to the standard error of its mean:
-%  %
-%  %       SEM_i = STD_i / sqrt(N_i)
-%  %
-%  % Then combine the tweezers using an unweighted mean.
-%  %
-%  % The uncertainty of the final mean contains two contributions:
-%  %
-%  %   1. Propagated uncertainty from the individual tweezer means:
-%  %
-%  %          propagatedError = sqrt(sum(SEM_i^2)) / N
-%  %
-%  %   2. Scatter between the individual tweezer means:
-%  %
-%  %          scatterError = std(tweezerMeans) / sqrt(N)
-%  %
-%  % The two contributions are combined in quadrature:
-%  %
-%  %          totalError = sqrt(propagatedError^2 + scatterError^2)
-%  
-%  
-%  %% Number of parameter groups
-%  
-%  numGroups = avgDatasetCounter / numTweezers;
-%  
-%  
-%  %% Reshape individual tweezer results into:
-%  %
-%  %       rows    = tweezers
-%  %       columns = parameter groups
-%  %
-%  % This assumes the entries were created in the order:
-%  %
-%  %       parameter 1: tweezer 1, 2, 3, ...
-%  %       parameter 2: tweezer 1, 2, 3, ...
-%  %       etc.
-%  
-%  MeanRawODCountGroups = reshape( ...
-%      avgDataset.IndivTwzrMeanRawODCounts, ...
-%      numTweezers, ...
-%      numGroups);
-%  
-%  StdRawODCountGroups = reshape( ...
-%      avgDataset.IndivTwzrStdRawODCounts, ...
-%      numTweezers, ...
-%      numGroups);
-%  
-%  MeanODCountGroups = reshape( ...
-%      avgDataset.IndivTwzrMeanODCounts, ...
-%      numTweezers, ...
-%      numGroups);
-%  
-%  StdODCountGroups = reshape( ...
-%      avgDataset.IndivTwzrStdODCounts, ...
-%      numTweezers, ...
-%      numGroups);
-%  
-%  
-%  %% Number of measurements contributing to each tweezer average
-%  
-%  NumAveragedGroups = reshape( ...
-%      avgDataset.IndivTwzrNumAveraged, ...
-%      numTweezers, ...
-%      numGroups);
-%  
-%  
-%  %% Convert individual-tweezer STD to SEM
-%  
-%  SemRawODCountGroups = ...
-%      StdRawODCountGroups ./ sqrt(NumAveragedGroups);
-%  
-%  SemODCountGroups = ...
-%      StdODCountGroups ./ sqrt(NumAveragedGroups);
-%  
-%  
-%  %% Mean across tweezers
-%  
-%  AllTwzrMeanRawODCounts = ...
-%      mean(MeanRawODCountGroups,1,'omitnan')';
-%  
-%  AllTwzrMeanODCounts = ...
-%      mean(MeanODCountGroups,1,'omitnan')';
-%  
-%  
-%  %% Calculate propagated uncertainty of the mean
-%  %
-%  % For an unweighted mean of N independent measurements:
-%  %
-%  %       propagatedError = sqrt(sum(SEM_i^2)) / N
-%  %
-%  % Ignore NaN values when determining which tweezers contribute.
-%  
-%  AllTwzrPropagatedRawError = nan(numGroups,1);
-%  AllTwzrPropagatedODError  = nan(numGroups,1);
-%  
-%  for groupNum = 1:numGroups
-%  
-%      %% Raw counts
-%  
-%      semValues = SemRawODCountGroups(:,groupNum);
-%  
-%      valid = isfinite(semValues);
-%  
-%      numValid = sum(valid);
-%  
-%      if numValid > 0
-%  
-%          AllTwzrPropagatedRawError(groupNum) = ...
-%              sqrt(sum(semValues(valid).^2)) / numValid;
-%  
-%      end
-%  
-%  
-%      %% OD counts
-%  
-%      semValues = SemODCountGroups(:,groupNum);
-%  
-%      valid = isfinite(semValues);
-%  
-%      numValid = sum(valid);
-%  
-%      if numValid > 0
-%  
-%          AllTwzrPropagatedODError(groupNum) = ...
-%              sqrt(sum(semValues(valid).^2)) / numValid;
-%  
-%      end
-%  
-%  end
-%  
-%  
-%  %% Calculate scatter between tweezers
-%  %
-%  % The standard error associated with the observed spread of the
-%  % individual tweezer means is:
-%  %
-%  %       scatterError = std(tweezerMeans) / sqrt(N)
-%  
-%  AllTwzrScatterRawError = nan(numGroups,1);
-%  AllTwzrScatterODError  = nan(numGroups,1);
-%  
-%  for groupNum = 1:numGroups
-%  
-%      %% Raw counts
-%  
-%      values = MeanRawODCountGroups(:,groupNum);
-%  
-%      valid = isfinite(values);
-%  
-%      values = values(valid);
-%  
-%      numValid = numel(values);
-%  
-%      if numValid > 1
-%  
-%          AllTwzrScatterRawError(groupNum) = ...
-%              std(values,0) / sqrt(numValid);
-%  
-%      elseif numValid == 1
-%  
-%          AllTwzrScatterRawError(groupNum) = 0;
-%  
-%      end
-%  
-%  
-%      %% OD counts
-%  
-%      values = MeanODCountGroups(:,groupNum);
-%  
-%      valid = isfinite(values);
-%  
-%      values = values(valid);
-%  
-%      numValid = numel(values);
-%  
-%      if numValid > 1
-%  
-%          AllTwzrScatterODError(groupNum) = ...
-%              std(values,0) / sqrt(numValid);
-%  
-%      elseif numValid == 1
-%  
-%          AllTwzrScatterODError(groupNum) = 0;
-%  
-%      end
-%  
-%  end
-%  
-%  
-%  %% Combine propagated uncertainty and tweezer-to-tweezer scatter
-%  %
-%  %       totalError =
-%  %           sqrt(propagatedError^2 + scatterError^2)
-%  
-%  AllTwzrStdRawODCounts = sqrt( ...
-%      AllTwzrPropagatedRawError.^2 + ...
-%      AllTwzrScatterRawError.^2);
-%  
-%  AllTwzrStdODCounts = sqrt( ...
-%      AllTwzrPropagatedODError.^2 + ...
-%      AllTwzrScatterODError.^2);
-%  
-%  
-%  %% Store results
-%  
-%  avgDataset.AllTwzrMeanRawODCounts = ...
-%      AllTwzrMeanRawODCounts;
-%  
-%  avgDataset.AllTwzrStdRawODCounts = ...
-%      AllTwzrStdRawODCounts;
-%  
-%  avgDataset.AllTwzrMeanODCounts = ...
-%      AllTwzrMeanODCounts;
-%  
-%  avgDataset.AllTwzrStdODCounts = ...
-%      AllTwzrStdODCounts;
-%  
-%  
-%  %% Also store the individual error contributions
-%  %
-%  % These aren't strictly necessary for plotting, but are extremely
-%  % useful for debugging/understanding where the final error comes from.
-%  
-%  avgDataset.AllTwzrPropagatedRawError = ...
-%      AllTwzrPropagatedRawError;
-%  
-%  avgDataset.AllTwzrScatterRawError = ...
-%      AllTwzrScatterRawError;
-%  
-%  avgDataset.AllTwzrPropagatedODError = ...
-%      AllTwzrPropagatedODError;
-%  
-%  avgDataset.AllTwzrScatterODError = ...
-%      AllTwzrScatterODError;
 
+matFile = fullfile(analyVar.analyOutDir, analyVar.avgOutSubDir, 'avgDataset.mat');
+save(matFile, 'avgDataset');
 
 fprintf(['Averaged OD images completed. ' ...
          'Created %d averaged entries.\n\n'], ...
