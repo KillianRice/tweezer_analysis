@@ -38,7 +38,8 @@ if analyVar.UseTweezer == 1
     
     % 5. Evaluate averaged fits
     if analyVar.SavePlotData == 1
-        PlotData = imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
+        %PlotData = imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
+        imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
     else
         imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
     end

@@ -38,23 +38,23 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         %%% If using tweezer:
         if isfield(analyVar,'UseTweezer') && analyVar.UseTweezer == 1
              for tweezerNum = 1:numTweezers
-                %% Read saved OD image for each tweezer & Bkg
-                atomFile = [analyVar.analyOutDir ...
-                    char(indivDataset{basenameNum}.fileAtom(k)) ...
-                    sprintf('_Tweezer%03d',tweezerNum) ...
-                    analyVar.ODimageFilename];
-    
-                if ~exist(atomFile,'file')
-                    error('Missing tweezer OD image:\n%s', atomFile);
-                end
-    
-                %OD_Image = dlmread(odFile);
-                atom_Image = readmatrix(atomFile, 'FileType', 'text');
-
-                if isempty(atom_Image)
-                    error('OD counter found an empty OD image file:\n%s', atomFile);
-                end
-
+                %   %% Read saved OD image for each tweezer & Bkg
+                %   atomFile = [analyVar.analyOutDir ...
+                %       char(indivDataset{basenameNum}.fileAtom(k)) ...
+                %       sprintf('_Tweezer%03d',tweezerNum) ...
+                %       analyVar.ODimageFilename];
+                %   
+                %   if ~exist(atomFile,'file')
+                %       error('Missing tweezer OD image:\n%s', atomFile);
+                %   end
+                %   
+                %   OD_Image = dlmread(odFile);
+                %   atom_Image = readmatrix(atomFile, 'FileType', 'text');
+                %   
+                %   if isempty(atom_Image)
+                %       error('OD counter found an empty OD image file:\n%s', atomFile);
+                %   end
+                %   
                 %% Read saved Bkg image for each tweezer (Image2)
                 bkgFile = [analyVar.analyOutDir ...
                     char(indivDataset{basenameNum}.fileBack(k)) ...
@@ -87,11 +87,11 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                     error('OD counter found an empty OD image file:\n%s', atomFile);
                 end
 
-                % Save the full image to indivDataset
-                indivDataset{basenameNum}.backSubtractedTwzImg{k,tweezerNum} = ...
-                    atom_Image - bkgImage;
+                %% Save the full image to indivDataset
+                % indivDataset{basenameNum}.backSubtractedTwzImg{k,tweezerNum} = ...
+                %     atom_Image - bkgImage;
 
-                % Save sum of the x-y cuts to the indivDataset
+                %% Save sum of the x-y cuts to the indivDataset
                 indivDataset{basenameNum}.backSubtractedTwzImgXSum{k,tweezerNum} = ...
                     sum(atom_Image - bkgImage, 1).';
                 indivDataset{basenameNum}.backSubtractedTwzImgYSum{k,tweezerNum} = ...
@@ -104,7 +104,6 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                 %Bkg
                 indivDataset{basenameNum}.TotalCountsRawBkg(k,tweezerNum) = ...
                     sum(bkgImage(:),'omitnan');
-                
                 %Atom
                 indivDataset{basenameNum}.TotalCountsImg1Raw(k,tweezerNum) = ...
                     sum(atom_Image(:),'omitnan');
@@ -147,13 +146,13 @@ if isfield(analyVar,'UseTweezer') && analyVar.UseTweezer == 1
     fprintf('\nBuilding 1D Image Summed Arrays...\n');
 
     for basenameNum = 1:analyVar.numBasenamesAtom
-        ImgXSum = zeros (size(indivDataset{basenameNum}.backSubtractedTwzImgYSum{1,tweezerNum},1),1); %% Create Pixel length Column Array
-        ImgYSum = zeros (size(indivDataset{basenameNum}.backSubtractedTwzImgXSum{1,tweezerNum},1),1); %% Create Pixel length Column Array
+        ImgXSum = zeros (size(indivDataset{basenameNum}.backSubtractedTwzImgYSum{1,tweezerNum},1),numTweezers); %% Create Pixel length Column Array
+        ImgYSum = zeros (size(indivDataset{basenameNum}.backSubtractedTwzImgXSum{1,tweezerNum},1),numTweezers); %% Create Pixel length Column Array
         
          for k = 1:indivDataset{basenameNum}.CounterAtom
              for tweezerNum = 1:numTweezers
-                 ImgXSum =  ImgXSum + indivDataset{basenameNum}.backSubtractedTwzImgYSum{k,tweezerNum};
-                 ImgYSum =  ImgYSum + indivDataset{basenameNum}.backSubtractedTwzImgXSum{k,tweezerNum};
+                 ImgXSum(:,tweezerNum) =  ImgXSum(:,tweezerNum) + indivDataset{basenameNum}.backSubtractedTwzImgYSum{k,tweezerNum};
+                 ImgYSum(:,tweezerNum) =  ImgYSum(:,tweezerNum) + indivDataset{basenameNum}.backSubtractedTwzImgXSum{k,tweezerNum};
              end
          end
             %indivDataset{basenameNum}.backSubtractedTwzImgYSum{k,tweezerNum},1

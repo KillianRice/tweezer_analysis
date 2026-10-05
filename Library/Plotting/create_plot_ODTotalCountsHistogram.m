@@ -14,17 +14,14 @@ end
 uniqueGroups = unique(groupVals);
 
 %% Bin edges
-if isfield(analyVar,'ODCountHistEdges')
-    edges = analyVar.ODCountHistEdges;
-else
-    allCounts = [];
 
-    for j = 1:avgDataset.CounterAtom
-        allCounts = [allCounts; avgDataset.sourceInfo{j}.totODCounts(:)];
-    end
+allCounts = [];
 
-    edges = linspace(min(allCounts), max(allCounts), 40);
+for j = 1:avgDataset.CounterAtom
+    allCounts = [allCounts; avgDataset.sourceInfo{j}.totODCounts(:)];
 end
+
+edges = linspace(min(allCounts), max(allCounts), 40);
 
 %% Combined plot
 figure;
