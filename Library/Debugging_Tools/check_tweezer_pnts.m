@@ -302,38 +302,7 @@ fprintf( ...
     'Selected %d tweezer square ROIs.\n', ...
     nTweezers);
 
-% figure(501); clf;
-% 
-% pcolor(Ypix, Xpix, roiCutImage);
-% shading flat;
-% axis equal tight;
-% colorbar;
-% 
-% title({'Click tweezer centers on ROI cut image', ...
-%        'Press Enter when finished'});
-% 
-% xlabel('Y pixel / row');
-% ylabel('X pixel / column');
-% 
-% fprintf('\nClick each tweezer center. Press Enter when finished.\n');
-% 
-% [yClick, xClick] = ginput;
-% 
-% centersXY = round([xClick(:), yClick(:)]);
-% %%%Creating local coordinates within the ROI of the image
-% centersXY(:,1) = round(centersXY(:,1) - min(Xpix) + 1);
-% centersXY(:,2) = round(centersXY(:,2) - min(Ypix) + 1);
-% 
-% nTweezers = size(centersXY,1);
-% 
-% if nTweezers == 0
-%     warning('No tweezer centers selected.');
-%     tweezerROI = [];
-%     return;
-% end
-% 
-% fprintf('Selected %d tweezer square ROIs.\n', nTweezers);
-% 
+
 %% Save ROI info
 tweezerROI = struct;
 tweezerROI.centersXY = centersXY;

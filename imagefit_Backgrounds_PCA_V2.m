@@ -125,13 +125,6 @@ for basenameNum = 1:analyVar.numBasenamesAtom
             % Subtract fitted bkg
             % bgOffset = estimate_corner_background(OD_Image_Single, analyVar.NoiseNumVec);
             % OD_Image_Single = OD_Image_Single - bgOffset;
-        
-            % Optional: clip negative values after subtraction
-            if isfield(analyVar,'FluorescenceClipNegative') && ...
-                    analyVar.FluorescenceClipNegative == 1
-        
-                OD_Image_Single(OD_Image_Single < 0) = 0;
-            end
 
         end    
 

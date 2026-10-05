@@ -6,7 +6,7 @@ function [modDropFit] = DropTimeCalibration(time,pos)
 %   pos  - spatial position (arb. unit)
 
 %% Fitting function
-s2 = @(coeffs,t) (coeffs(2) - 0.49.*coeffs(1).*(t.^2)); % Y0 - C*(1/2gt^2), where C is in pixels/meter.
+s2 = @(coeffs,t) (coeffs(2) - 4.9.*coeffs(1).*(t.^2)); % Y0 - C*(1/2gt^2), where C is in pixels/meter.
 
 %% Guessing
 %[peakTime,peakLoc] = findpeaks(smooth(pos),'minpeakdistance',2,'minpeakheight',mean(pos));

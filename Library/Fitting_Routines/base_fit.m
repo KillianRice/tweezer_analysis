@@ -191,7 +191,7 @@ function [xav,yav,yer,coefflist,coefflist_err,avg_fit_coeffs_twzr] = base_fit(an
         %                   INDIVDATASETS WITH SAME SCAN IDS
         %  ----------------------------------------------------------------------------
         
-        if length(analyVar.timevectorAtom) > 1 && plotAvgFits
+        if length(analyVar.timevectorAtom) > 0 && plotAvgFits
         
             [xavg, yavg, yerr] = get_averages(analyVar, indivDataset, avgDataset,...
                 indVarField, depVarField, weighting, tweezerNum);                   %%%% Change for including separate tweezers

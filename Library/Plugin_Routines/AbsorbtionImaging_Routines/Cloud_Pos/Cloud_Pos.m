@@ -5,9 +5,9 @@ function posOut = Cloud_Pos(analyVar,indivDataset,avgDataset)
 avgAutoFlag = 1;%length(cell2mat(analyVar.posOccurUniqVar)) > length(analyVar.posOccurUniqVar) & ~any(analyVar.uniqScanList == 0);
 
 %% Flag whether to fit center positions as oscillations
-oscFitFlag  = 1;
-dropTimeFit = 0;
-oscAxis    = 'x'; %flag which axis is oscillating in space
+oscFitFlag  = 0;
+dropTimeFit = 1;
+oscAxis    = 'y'; %flag which axis is oscillating in space
 fitStatFlag = 1;
 
 %% Initialize loop variables

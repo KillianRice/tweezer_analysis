@@ -121,12 +121,13 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     'tweezerGaussianFit',...             %74 Plot the sum of the x and y axes of tweezers and fit to gaussian
                     'skewed_sfi_gaussian',...            %75 Skewed Gaussian Fitting
                     'trap_frequency_triple_gaussian_loss',... %76 fits 3 gaussian loss features from trap frequency measurement done by modulating ODT power
+                    'plot_isThereAtom_tweezer', ... %77 plots Percentage of Tweezer ROIs above threshold set by atomCountSignal vs ID
                     };
 
 %plugInVec = [22,36,35,72];
 %plugInVec = [22,23,37,38,69];
 %plugInVec = [22,27,39];
-plugInVec = [45,46];
+plugInVec = [77];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -149,27 +150,35 @@ UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for
 CameraType = 1; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
-%% Tweezer Options
+%% Tweezer Options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% -------------------------------------------------------------------------%
+    %% Essential Usage
 UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
-dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
-avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
-avgScanParam = '689 Frequency'; % What is the given name of that parameter
-avgScanIDParam = '532 power (V)'; % For legends on a plot, what does the ID represent
-avgOutSubDir = 'AveragedFits/';
-plotHistogram = 0;
-NormalizeTweezers = 0;
-fitODImage = 0;
-plotIndivTwzrCounts = 1; plotRawCounts = 0;
-plotRawImage  = 0;             % Processed raw images
-AveragedFitMode = 'scanParameter';   % 'scanParameter' or 'allImagesByTweezer'
-numFakeTweezers1 = 0; numFakeTweezers2 = 0;  % In check_tweezer_pnts how many ROIs (at the end) where non-tweezers %1 is within RMOT 2 is far from RMOT
+dummyScan = 1; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
+plotHistogram = 0; % Mainly used with DUMMY scans, plots the counts from each tweezer onto a histogram with shared IDs
+plotIndivTwzrCounts = 1; plotRawCounts = 0; % Main Plot to show counts vs scan parm for all tweezers individually and averaged together
 avgTweezerBasefit = 0;  % Determines if any basefit functions will show a fit of all tweezer ROI counts averaged
-atomCountSignal = 200;
+avgScanIDParam = 'kHz'; % For legends on a plot, what does the ID represent
+avgScanParam = 'time (ms)'; % What is the given name of that parameter: X Axis label
 SkipIndivTwzrFitting = 0;
 
+    %% Less Usage
+NormalizeTweezers = 0; % (Unfinished)
+fitODImage = 0; % (quirky, need large ROI and changing initial widths guess for this to function) Fits single image of all tweezers summed up with same ID
+plotRawImage  = 0; % Will plot raw images of background, atom, and tweezer. Will be prompted to grab specific image from file
+numFakeTweezers1 = 0; numFakeTweezers2 = 0;  % (ignore naming scheme) If you want to group up the tweezers differently during averaging this allows you to
+% example: 10 spots, if numFake1 = 2 and numFake2 = 3 then group 1 = 1-5, group 2 (numFake 1)  = 6-7, group 3 (numFake2) = 8-10 
+atomCountSignal = 200;
 
-analyVar.FluorescenceRemoveCornerOffset = 0;
-analyVar.FluorescenceClipNegative = 0;
+    %% Probably Untouched (But shown here for admin control)
+avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
+avgOutSubDir = 'AveragedFits/';
+AveragedFitMode = 'scanParameter';   % 'scanParameter' or 'allImagesByTweezer'
+
+
+
+% analyVar.FluorescenceRemoveCornerOffset = 0;
+% analyVar.FluorescenceClipNegative = 0;
 
 %% Plotting presentation (X value units) %%
 %variable to call in other functions is .xDataUnit & .xDataLabel
@@ -188,7 +197,7 @@ end
 %%-----------------------------------------------------------------------%%
 % Flag to Load Image Data
 
-SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
+SavePlotData  = 0; % Boolean to allow aggregation of variables from plotting into output structure
 plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals1
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
@@ -584,7 +593,7 @@ switch CameraMag
         if CameraType == 1  %condition for Zyla 4.2 camera
             CameraRes  = 0.8; %um GUESS
             pixelOnCam = 6.5*10^(-6); %m
-            MagImgSystem = 8;  %% 25 mm in-vacuo & 200 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
+            MagImgSystem = 9.0718;% 9/18/2026 Drop Measurement...Should be 8;  %% 25 mm in-vacuo & 200 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
             bin = binHorizontal;
             pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
             
@@ -617,7 +626,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_twzrAccStudyANDAIDecay';  %%%CHANGE FILE NAME
+analyPrefix     = '_TwzrCoolingAndTrapFreqODTDens';  %%%CHANGE FILE NAME
 %analyPrefix     = '_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 analyOutputName = 'Analysis';
 
