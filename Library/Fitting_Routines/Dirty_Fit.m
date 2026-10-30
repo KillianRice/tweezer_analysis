@@ -7,13 +7,15 @@ function funcOut = Dirty_Fit(analyVar, indivDataset, avgDataset)
     % form is an anonymous function of form @(coeffs,x)
     % for example @(coeffs,x) = coeffs(1) * exp(-coeffs(2)*x)
     % coeffs can have any number of elements
-    form = @(coeffs,x) coeffs(3)*sin(2*pi*coeffs(1)/1000*x+coeffs(6))+sin(2*pi*coeffs(2)/1000*x+coeffs(7))*coeffs(4)+coeffs(5);
+    % form = @(coeffs,x) coeffs(3)*sin(2*pi*coeffs(1)/1000*x+coeffs(6))+sin(2*pi*coeffs(2)/1000*x+coeffs(7))*coeffs(4)+coeffs(5);
+    % form = @(coeffs,t) (coeffs(2) + coeffs(3).*(t/1000) - 0.5*9.81*coeffs(1).*((t/1000).^2)); % Y0 - C*(1/2gt^2), where C is in pixels/meter.
+    form = @(coeffs,t) (coeffs(2) - 0.5*9.81*coeffs(1).*((t/1000).^2));
 
     %form = @(coeffs,x) coeffs(2)*sin(2*pi*coeffs(1)*x+coeffs(4))+coeffs(3);
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField = 'cntrX'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'cntrY'; % The field of an indivdataset that is to be plotted on the y axis
     
-    xaxis_label = 'recapture time[ms]';
+    xaxis_label = 'time (ms)';
     yaxis_label = 'X-center';
     
     [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
@@ -22,8 +24,9 @@ function funcOut = Dirty_Fit(analyVar, indivDataset, avgDataset)
     % put code for generating initial guesses here, needs to provide a
     % vector x0 with the same number of elements as the number of fitting
     % parameters
-    x0 = [70,70,1,1,100,0,0];
-    %x0 = [28,10,134,0];
+    %x0 = [70,70,1,1,100,0,0];
+    x0 = [10^5,60];
+    %x0 = [60];
     
     for i = 1:analyVar.numBasenamesAtom
         
@@ -61,7 +64,7 @@ function funcOut = Dirty_Fit(analyVar, indivDataset, avgDataset)
     
     if length(analyVar.timevectorAtom) > 1
         
-        [xdata, ydata, yerr] = get_averages(analyVar, indivDataset, avgDataset, indVarField, depVarField);
+        [xdata, ydata, yerr] = get_averages(analyVar, indivDataset, avgDataset, indVarField, depVarField,'gaussian',1);
         scanIDs = analyVar.uniqScanList;
         
         for i = 1:length(scanIDs)
@@ -92,6 +95,7 @@ function funcOut = Dirty_Fit(analyVar, indivDataset, avgDataset)
     disp('Fit coefficients - make sure to check units')
     disp(form)
     cellfun(@(x) fprintf('%.5e\n',x), coeffs)
+    disp(avg_coeffs{1})
     funcOut.indivDataset = indivDataset;
     funcOut.analyVar = analyVar;
     funcOut.avgDataset = avgDataset;
@@ -130,9 +134,11 @@ end
 
 function an = myAnnotation(coeffs)
     dim = [.7 .5 .3 .3];
-    fmt = '%0.2f';
-    str_mean = strcat('F1: ',num2str(coeffs(1),fmt), ' Hz');
-    str_std = strcat('F2: ',num2str(coeffs(2),fmt), ' Hz');
-    str = [str_mean, char(10), str_std];
+    fmt = '%0.9f';
+    str_1 = strcat('Eff px: ',num2str(1/coeffs(1),fmt), ' m/px');
+    str_2 = strcat('Max Px: ',num2str(coeffs(2),fmt), ' px');
+    %str_3 = strcat('Velocity: ',num2str(coeffs(3),fmt), ' px/s');
+    %str = [str_1, char(10), str_2, char(10), str_3];
+    str = [str_1, char(10), str_2];
     an = annotation('textbox',dim,'String',str,'FitBoxToText','on','BackgroundColor','white');
 end

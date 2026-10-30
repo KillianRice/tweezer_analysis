@@ -72,7 +72,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         fclose(tFID);
     
         if analyVar.UseImages_Fluorescence == 1
-            prelimRawAtoms = fullRawImageAtom;
+            prelimRawAtoms = fullRawImageAtom - fullRawImageBack;
         else
             prelimRawAtoms = log(abs(fullRawImageBack)) - log(abs(fullRawImageAtom));
         end

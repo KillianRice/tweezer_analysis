@@ -20,10 +20,18 @@ if analyVar.numBasenamesAtom > 5
     end
 end
 indivDataset = get_indiv_batch_data(analyVar);
+close all;
 
 if analyVar.UseTweezer == 1
+    
+    if analyVar.avgBkgImg
+        avgBkgLibrary = create_AvgBkg_Library(analyVar, indivDataset);
+        %create_plot_IndivTwzr_AveragedCounts(analyVar,avgBkgLibrary);
+    else
+        avgBkgLibrary = 0;
+    end
     % 1. make/save individual OD images and Raw ROI cuts
-    imagefit_Backgrounds_PCA_V2(analyVar, indivDataset);
+    imagefit_save_tweezer_spots(analyVar, indivDataset, avgBkgLibrary);
 
     % 2. Grab OD Total Counts for Histograms
     indivDataset = param_ext_ODTotalCounts(analyVar,indivDataset);
@@ -38,8 +46,7 @@ if analyVar.UseTweezer == 1
     
     % 5. Evaluate averaged fits
     if analyVar.SavePlotData == 1
-        %PlotData = imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
-        imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
+        PlotData = imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
     else
         imagefit_ParamEval_Averaged(analyVar, indivDataset, avgDataset);
     end

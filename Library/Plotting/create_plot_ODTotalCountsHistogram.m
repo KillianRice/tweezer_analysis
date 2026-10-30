@@ -1,43 +1,51 @@
 function create_plot_ODTotalCountsHistogram(analyVar, avgDataset, plotIndividual)
 
-if nargin < 3
-    plotIndividual = 0;
-end
+plotIndividual = 1;
 
-%% Collect group IDs
-groupVals = zeros(avgDataset.CounterAtom,1);
+%% Group IDs and Scam IDs
+groupVals = avgDataset.imagevcoAtom;
+entryScanID = avgDataset.scanID;
 
-for j = 1:avgDataset.CounterAtom
-    groupVals(j) = avgDataset.sourceInfo{j}.imagevcoAtom;
-end
+%% Identify unique group ID and scan ID combinations
 
-uniqueGroups = unique(groupVals);
+groupScanVals = unique([groupVals, entryScanID], 'rows');
+uniqueGroups = groupScanVals(:,1);
+uniqueScanIDs = groupScanVals(:,2);
 
 %% Bin edges
 
 allCounts = [];
 
 for j = 1:avgDataset.CounterAtom
-    allCounts = [allCounts; avgDataset.sourceInfo{j}.totODCounts(:)];
+    if analyVar.plotRawCounts
+        allCounts = [allCounts; avgDataset.sourceInfo{j}.rawODCounts(:)];
+    else
+        allCounts = [allCounts; avgDataset.sourceInfo{j}.totODCounts(:)];
+    end
 end
 
-edges = linspace(min(allCounts), max(allCounts), 40);
+edges = linspace(min(allCounts), max(allCounts), 100);
 
-%% Combined plot
+% Combined plot
 figure;
 hold on;
 
-colors = lines(numel(uniqueGroups));
-legendList = cell(numel(uniqueGroups),1);
+colors = lines(size(groupScanVals,1));
+legendList = cell(size(groupScanVals,1),1);
 
-for g = 1:numel(uniqueGroups)
+for g = 1:size(groupScanVals,1)
 
     groupID = uniqueGroups(g);
+    scanID = uniqueScanIDs(g);
     counts = [];
 
     for j = 1:avgDataset.CounterAtom
-        if groupVals(j) == groupID
-            counts = [counts; avgDataset.sourceInfo{j}.totODCounts(:)];
+        if groupVals(j) == groupID && entryScanID(j) == scanID
+            if analyVar.plotRawCounts
+                counts = [counts; avgDataset.IndivTwzrRawCounts{j}(:)];
+            else
+                counts = [counts; avgDataset.IndivTwzrTotODCounts{j}(:)];
+            end
         end
     end
 
@@ -47,15 +55,17 @@ for g = 1:numel(uniqueGroups)
         'FaceColor', colors(g,:), ...
         'FaceAlpha', 0.45);
 
-    legendList{g} = sprintf('%s = %g', analyVar.avgScanParam, groupID);
+    legendList{g} = sprintf('%s = %g, Scan ID = %g', ...
+        analyVar.avgScanParam, groupID, scanID);
 end
 
 xlabel('Integrated OD counts');
 ylabel('Probability');
-title('OD Total Counts Histogram by avgDataset Group');
+title('OD Total Counts Histogram by Group and Scan ID');
 grid on;
 legend(legendList, 'Location', 'best');
 hold off;
+
 
 %% Optional individual plots
 if plotIndividual
@@ -63,28 +73,48 @@ if plotIndividual
     for g = 1:numel(uniqueGroups)
 
         groupID = uniqueGroups(g);
-        counts = [];
 
-        for j = 1:avgDataset.CounterAtom
-            if groupVals(j) == groupID
-                counts = [counts; avgDataset.sourceInfo{j}.totODCounts(:)];
-            end
-        end
+        % Find all scan IDs associated with this group ID
+        scanIDsForGroup = uniqueScanIDs(uniqueGroups == groupID);
 
         figure;
-        histogram(counts, ...
-            'BinEdges', edges, ...
-            'Normalization', 'probability', ...
-            'FaceColor', colors(g,:), ...
-            'FaceAlpha', 0.6);
+        hold on;
+
+        groupColors = lines(numel(scanIDsForGroup));
+        legendList = cell(numel(scanIDsForGroup),1);
+
+        for s = 1:numel(scanIDsForGroup)
+
+            scanID = scanIDsForGroup(s);
+            counts = [];
+
+            for j = 1:avgDataset.CounterAtom
+                if groupVals(j) == groupID && entryScanID(j) == scanID
+                    if analyVar.plotRawCounts
+                        counts = [counts; avgDataset.IndivTwzrRawCounts{j}(:)];
+                    else
+                        counts = [counts; avgDataset.IndivTwzrTotODCounts{j}(:)];
+                    end
+                end
+            end
+
+            histogram(counts, ...
+                'BinEdges', edges, ...
+                'Normalization', 'probability', ...
+                'FaceColor', groupColors(s,:), ...
+                'FaceAlpha', 0.45);
+
+            legendList{s} = sprintf('Scan ID = %g', scanID);
+
+        end
 
         xlabel('Integrated OD counts');
         ylabel('Probability');
         title(sprintf('OD Total Counts Histogram - %s = %g', ...
             analyVar.avgScanParam, groupID));
         grid on;
+        legend(legendList, 'Location', 'best');
+        hold off;
 
     end
-end
-
 end

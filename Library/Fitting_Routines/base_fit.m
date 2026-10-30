@@ -360,7 +360,9 @@ function [xav,yav,yer,coefflist,coefflist_err,avg_fit_coeffs_twzr] = base_fit(an
     %     DO A BASEFIT FITTING FOR THE AVERAGE OF ALL TWEEZER SPOTS
     %         (ABOVE WAS DOWN FOR EACH INDIVIDUAL TWEEZER SPOT)
     if analyVar.UseTweezer && analyVar.avgTweezerBasefit
-            scanIDs = analyVar.uniqScanList;
+            
+            scanIDs = avgDataset.uniqueScanIDs;
+            %scanIDs = analyVar.uniqScanList;
             coeffs = cell(length(scanIDs),1);
             uncs = cell(length(scanIDs),1);
             xdata = avgDataset.ODCountsX;
@@ -405,7 +407,8 @@ function [xav,yav,yer,coefflist,coefflist_err,avg_fit_coeffs_twzr] = base_fit(an
                     % disp(coeffs{i})
                     xlabel(xlabeltext,'Interpreter','none');
                     ylabel(ylabeltext,'Interpreter','none');
-                    legend(num2str(analyVar.timevectorAtom(i)));
+                    legend(num2str(scanIDs(i)),'Data','Fit');
+                    %legend(num2str(analyVar.timevectorAtom(i)));
                     set(gca, 'YScale', yAxisScale);
                     set(gca, 'XScale', xAxisScale);
                     title(strcat(['Avg All Twzr', fitTitle, ' \chi^2_{\nu} = ',num2str(rchisq),' A\nu = ',...

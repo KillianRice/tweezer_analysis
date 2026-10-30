@@ -812,23 +812,23 @@ nonTweezer2Indices = ...
 %
 % Use the first contributing basename to determine the scan ID.
 %
-
-entryScanID = nan(numEntries,1);
-
-for entry = 1:numEntries
-
-    src = avgDataset.sourceInfo{entry};
-
-    if isempty(src.basenameNums)
-        continue;
-    end
-
-    basenameNum = src.basenameNums(1);
-
-    entryScanID(entry) = ...
-        analyVar.meanListVar(basenameNum);
-
-end
+entryScanID = avgDataset.scanID;
+% entryScanID = nan(numEntries,1);
+% 
+% for entry = 1:numEntries
+% 
+%     src = avgDataset.sourceInfo{entry};
+% 
+%     if isempty(src.basenameNums)
+%         continue;
+%     end
+% 
+%     basenameNum = src.basenameNums(1);
+% 
+%     entryScanID(entry) = ...
+%         analyVar.meanListVar(basenameNum);
+% 
+% end
 
 
 %% Preallocate plotting data

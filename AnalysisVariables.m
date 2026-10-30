@@ -125,9 +125,9 @@ lcl_validFitLine = {'Spectrum_Fit',...                  %01
                     };
 
 %plugInVec = [22,36,35,72];
-%plugInVec = [22,23,37,38,69];
-%plugInVec = [22,27,39];
-plugInVec = [77];
+%plugInVec = [22,23];
+%plugInVec = [59];
+plugInVec = [39];
 
 %% Global Filters
 %%-----------------------------------------------------------------------%%
@@ -147,28 +147,31 @@ UseImages = 1;%set to 1 to load cloud (not tweezer) image data. Set to 0 when im
 UseImages_Fluorescence = 1; % 0 for Absorption (default), 1 for fluorescence imaging using MOT beams, for example.
 UseMCS = 0; % set to 1 to use mcs data, set to 0 to ignore mcs data
 UseWavemeter = 0; % set to 1 to plot with wavemeter reading on the x axis, 0 for independent var
-CameraType = 1; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
+CameraType = 0; % set to 1 to use Zyla4.2 sideview camera and 0 to use the PixelFly
 DropTimeOffset = 0; %this is the time for opening the blackhouse shutter
 
 %% Tweezer Options %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % -------------------------------------------------------------------------%
     %% Essential Usage
-UseTweezer = 1; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
-dummyScan = 1; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
-plotHistogram = 0; % Mainly used with DUMMY scans, plots the counts from each tweezer onto a histogram with shared IDs
+UseTweezer = 0; %set 1 to load images of tweezer (spot sizes and summing up multiple images). Set 0 when not analyzing tweezer images
+dummyScan = 0; %Set 1 if averaging images within the same file. Set 0 if averaging over similar depedent parameters over many scans
+plotHistogram = 1; % Mainly used with DUMMY scans, plots the counts from each tweezer onto a histogram with shared IDs
 plotIndivTwzrCounts = 1; plotRawCounts = 0; % Main Plot to show counts vs scan parm for all tweezers individually and averaged together
 avgTweezerBasefit = 0;  % Determines if any basefit functions will show a fit of all tweezer ROI counts averaged
 avgScanIDParam = 'kHz'; % For legends on a plot, what does the ID represent
 avgScanParam = 'time (ms)'; % What is the given name of that parameter: X Axis label
-SkipIndivTwzrFitting = 0;
+SkipIndivTwzrFitting = 0; % Use for any fitting function where we just want that averaged tweezer fit
+avgBkgImg = 1; % Use for averaging all the bkg images of similar scan ID and parameters to subtract off the raw images
+plotAvgAtomMinusBkg = 1;
 
-    %% Less Usage
+    %% Less Usage 
 NormalizeTweezers = 0; % (Unfinished)
 fitODImage = 0; % (quirky, need large ROI and changing initial widths guess for this to function) Fits single image of all tweezers summed up with same ID
 plotRawImage  = 0; % Will plot raw images of background, atom, and tweezer. Will be prompted to grab specific image from file
 numFakeTweezers1 = 0; numFakeTweezers2 = 0;  % (ignore naming scheme) If you want to group up the tweezers differently during averaging this allows you to
 % example: 10 spots, if numFake1 = 2 and numFake2 = 3 then group 1 = 1-5, group 2 (numFake 1)  = 6-7, group 3 (numFake2) = 8-10 
-atomCountSignal = 200;
+atomCountSignal = 100;
+imagefit1Dsum = 1; % Corresponds to using function 74 for summing images in two 1D arrays for easier 2D fitting
 
     %% Probably Untouched (But shown here for admin control)
 avgScanParamField = 'imagevcoAtom';  % What value from the raw data are we plotting (Usually is imagevcoAtom the dep variable)
@@ -197,7 +200,7 @@ end
 %%-----------------------------------------------------------------------%%
 % Flag to Load Image Data
 
-SavePlotData  = 0; % Boolean to allow aggregation of variables from plotting into output structure
+SavePlotData  = 1; % Boolean to allow aggregation of variables from plotting into output structure
 plotFitEval   = 0; % Boolean to display plots showing the fit, cloud evolution, and residuals1
 plotInstParam = 1; % Boolean to extract and display 1st order parameters such as temperature, size, and number
 plotMeanParam = 1; % Boolean to average instantaneous parameters across multiple scans
@@ -250,17 +253,17 @@ isotope        = 88; % Isotope mass used to select applicable models for fitting
 detuning       = 20*10^6*2*pi;  % s^-1, image beam detuning (as of 9/13/2026)
 pureSample     = 1;  % Flags whether BEC samples have a thermal fraction present or not (ignored for Thermal and Lattice samples)
 winToFit       = {'Central'}; % Specify which windows to fit, this generates the vector LatticeAxesFit
-dimenReduc1D   = 1;
 
+%% Camera BINNING %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if CameraType == 0
     binHorizontal  = 2;%binning done by camera when taking images
     binVertical    = 2;
     matrixSize     = [1280/binVertical 1024/binHorizontal]; % Matrix size of camera output: Set this to be the same as PixelFly dimensions.
 end
 if CameraType == 1
-    binHorizontal  = 2;%binning done by camera when taking images
-    binVertical    = 2;
-    matrixSize     = [600/binVertical 600/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
+    binHorizontal  = 1;%binning done by camera when taking images
+    binVertical    = 1;
+    matrixSize     = [240/binVertical 240/binHorizontal]; % Matrix size of camera output: Set this to be the same as Zyla dimensions.
 end 
 CameraMag      = 1;  % Currently can do 1x or 4x magnification (input 1 or 4)
 CCDbinning     = 1;  % Number of pixels binned when first recording data
@@ -593,7 +596,7 @@ switch CameraMag
         if CameraType == 1  %condition for Zyla 4.2 camera
             CameraRes  = 0.8; %um GUESS
             pixelOnCam = 6.5*10^(-6); %m
-            MagImgSystem = 9.0718;% 9/18/2026 Drop Measurement...Should be 8;  %% 25 mm in-vacuo & 200 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
+            MagImgSystem = 9.116;% 10/10/2026 Drop Measurement...Should be 8;  %% 25 mm in-vacuo & 200 mm for tubelens. Change Mag when using different lens, like 200 mm for Tweezers.
             bin = binHorizontal;
             pixelsize  = bin*pixelOnCam/MagImgSystem; %m/px
             
@@ -626,7 +629,7 @@ rmpath([pwd filesep 'Library' filesep 'Archive']);
 
 % Define default folder names for directory heirarchy
 NeutExpDir      = 'Raw_Data';
-analyPrefix     = '_TwzrCoolingAndTrapFreqODTDens';  %%%CHANGE FILE NAME
+analyPrefix     = '_TwzrLeapFaithANDRydTrip';  %%%CHANGE FILE NAME
 %analyPrefix     = '_mmWavePolarization'; %%(USE THIS AND CHANGE NAME TO ACCESS OTHER FOLDER DATA)
 analyOutputName = 'Analysis';
 

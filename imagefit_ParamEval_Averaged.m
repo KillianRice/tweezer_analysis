@@ -23,7 +23,6 @@ function varargout = imagefit_ParamEval_Averaged(varargin)
 % NOTES:
 %   06.10.2026 - Code edited similar to imagefit_ParamEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-close all
 
 %% Load variables and file data
 if nargin == 0

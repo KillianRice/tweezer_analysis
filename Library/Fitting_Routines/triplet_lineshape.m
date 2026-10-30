@@ -9,13 +9,13 @@ function funcOut = triplet_lineshape(analyVar, indivDataset, avgDataset)
     % coeffs can have any number of elements
     form = @(coeffs, x) coeffs(1)*exp(-(x-(coeffs(2)+abs(coeffs(4))/2)).^2./(2*coeffs(3))^2) + ...
         coeffs(5)*exp(-(x-(coeffs(2)-abs(coeffs(4))/2)).^2./(2*coeffs(6)^2)) + ...
-        coeffs(7)*exp(-(x-coeffs(2)).^2/(2*coeffs(8)^2));
+        coeffs(7)*exp(-(x-coeffs(2)).^2/(2*coeffs(8)^2)) + coeffs(9);
     
     indVarField = 'imagevcoAtom'; % The Field of an IndivDataset that is to be plotted on the X axis
-    depVarField = 'OD_TotalCounts'; % The field of an indivdataset that is to be plotted on the y axis
+    depVarField = 'winTotNum'; % The field of an indivdataset that is to be plotted on the y axis
     
-    xaxis_label = 'Detuning (MHz)';
-    yaxis_label = 'OD_TotalCounts';
+    xaxis_label = 'rMOT Beam Freq (MHz)';
+    yaxis_label = 'ODT Flou. Counts';
     
     [xdata, ydata] = getxy(indVarField, depVarField, analyVar, indivDataset, avgDataset);
     coeffs = cell(analyVar.numBasenamesAtom,1);
@@ -23,7 +23,7 @@ function funcOut = triplet_lineshape(analyVar, indivDataset, avgDataset)
     % put code for generating initial guesses here, needs to provide a
     % vector x0 with the same number of elements as the number of fitting
     % parameters
-    x0 = [1000, 1607.625, 0.05, 0.5, 1000, 0.05];
+    x0 = [100000, 82, 0.2, 0.2, 1000, 0.2];
     
     
     for i = 1:analyVar.numBasenamesAtom
@@ -81,12 +81,13 @@ function x0 = initial_guess(x,y)
     x0 = zeros(6,1);
     x0(1) = max(y);
     x0(5) = max(y);
-    x0(2) = sum(x.*y)/sum(y);
+    x0(2) = 82.03;
     x0(3) = 0.05;
     x0(6) = 0.05;
     x0(8) = 0.05;
-    x0(4) = 5*sum((x-x0(2)).^2.*y)/sum(y);
+    x0(4) = 3.9;
     x0(7) = mean(y);
+    x0(9) = 100000;
 
 end
 

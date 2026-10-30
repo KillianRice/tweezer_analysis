@@ -70,7 +70,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
         else
             title('Y - Axis'); fitCntr = cntrY;
         end
-        DropTimeCalibration(indVar*1e-3,fitCntr');
+        DropTimeCalibration(indVar*1e-3,fitCntr',0);
         set(gca,'FontSize',16)
     end
     
@@ -112,15 +112,23 @@ if avgAutoFlag
             avgCntrY(idxSharedWithSim,simScanIter) = cntrY(:,idxSharedInBatch);
         end
         
+        %% Grab error for plotting
+        stdCntrX = nanstd(avgCntrX,0,2);
+        nCntrX = sum(~isnan(avgCntrX),2);
+        errCntrX = stdCntrX ./ sqrt(nCntrX);
+        stdCntrY = nanstd(avgCntrY,0,2);
+        nCntrY = sum(~isnan(avgCntrY),2);
+        errCntrY = stdCntrY ./ sqrt(nCntrY);
+
         %% Average all like points together
         % Function below takes the mean of the matrix of mixed NaN's and values
         avgCntrX = nanmean(avgCntrX,2);
         avgCntrY = nanmean(avgCntrY,2);
+
         
         %% Plotting
         %%%%%%%-----------------------------------%%%%%%%%%%
         indVar = avgDataset{uniqScanIter}.simScanIndVar;
-        
         cntrLabel = {'Avg. Center Position', 'Avg. Center Position'};
         cntrTitle = {'','X-axis','Y-axis'};
         default_plot(analyVar,[uniqScanIter length(analyVar.uniqScanList)],...
@@ -141,11 +149,11 @@ if avgAutoFlag
         if dropTimeFit
             figure;
             if strcmpi('x',oscAxis)
-                title('X - Axis'); fitCntr = avgCntrX;
+                title('X - Axis'); fitCntr = avgCntrX; cntrErr = errCntrX;
             else
-                title('Y - Axis'); fitCntr = avgCntrY;
+                title('Y - Axis'); fitCntr = avgCntrY; cntrErr = errCntrY;
             end
-            DropTimeCalibration(indVar*1e-3,fitCntr);
+            DropTimeCalibrationErr(indVar*1e-3,fitCntr,1,cntrErr);
             set(gca,'FontSize',16)
         end
     end

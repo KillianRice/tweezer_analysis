@@ -486,8 +486,7 @@ for j = 1:nPlots
 
     % X direction / column through cloud center.
     
-    if isfield(analyVar,'dimenReduc1D') && ...
-            analyVar.dimenReduc1D == 1
+    if analyVar.imagefit1Dsum == 1
     
         %% ------------------------------------------------------------
         %  Integrated profiles
@@ -562,8 +561,7 @@ for j = 1:nPlots
         'r');
 
 
-    if isfield(analyVar,'dimenReduc1D') && ...
-            analyVar.dimenReduc1D == 1
+    if analyVar.imagefit1Dsum == 1
     
         title( ...
             sprintf( ...

@@ -1,4 +1,4 @@
-function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
+function funcOut = tweezerGaussianFit(analyVar, indivDataset, avgDataset)
     
     %% Fit_Template - Joe Whalen 2019.10.02
     
@@ -24,6 +24,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     depVarField2 = 'ImgYSum'; % dependent variable
     coeffParam = 3;
     fitting2Gauss = 0;
+    plotAmp = 0;
 
     
     %% initial guess code
@@ -41,7 +42,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
             initialguess(2) =  sum(xdata.*ydata)/sum(ydata);
             %initialguess(2) = 81.96;
             initialguess(3) = sqrt(sum((xdata-initialguess(2)).^2.*ydata)/sum(ydata));
-            initialguess(3) = 2;
+            %initialguess(3) = 2;
             %x0(4) = max(y);            %% For negative gaussians
             initialguess(4) = min(ydata);             %% For positive
             initialguess(5) = 0;
@@ -61,7 +62,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
             initialguess(2) =  sum(xdata.*ydata)/sum(ydata);
             %initialguess(2) = 81.96;
             initialguess(3) = sqrt(sum((xdata-initialguess(2)).^2.*ydata)/sum(ydata));
-            initialguess(3) = 2;
+            %initialguess(3) = 2;
             %x0(4) = max(y);            %% For negative gaussians
             initialguess(4) = min(ydata);             %% For positive
             initialguess(5) = 0;
@@ -99,7 +100,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
         % %'FitTitle', (call from dbstack),...
         % 'Statistics', 'gaussian');
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
+    if fitting2Gauss
     % THIS FUNCTION DOES NOT WORK USING INDIVIDUAL FITS
     options = struct(...
         'PlotIndivFits', false,...
@@ -108,7 +109,24 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
         'PlotAllAvgs', true,...
         'PlotInitialGuess', true,...
         'Statistics', 'gaussian', ...
-        'XAxisScale', 'linear');
+        'XAxisScale', 'linear', ...
+        'CoeffNames', {{'Amplitude', 'Line Center', '1/e^2 Radius', 'Offset', 'slope','Amplitude', 'Line Center', '1/e^2 Radius',}},...
+        'CoeffUnits', {{'','Px','Px','','','','Px','Px'}} ...
+        );
+    else
+            % THIS FUNCTION DOES NOT WORK USING INDIVIDUAL FITS
+    options = struct(...
+        'PlotIndivFits', false,...
+        'PlotAvgFits', true,...
+        'PlotAll', false,...
+        'PlotAllAvgs', true,...
+        'PlotInitialGuess', true,...
+        'Statistics', 'gaussian', ...
+        'XAxisScale', 'linear', ...
+        'CoeffNames', {{'Amplitude', 'Line Center', '1/e^2 Radius', 'Offset', 'slope',}},...
+        'CoeffUnits', {{'','Px','Px','','',}} ...
+        );
+    end
     
 
     [xav1,yav1,yer1,coefflist1,coefflist_err1,avg_fit_coeffs_twzr1] = base_fit(analyVar, indivDataset, avgDataset, form, indVarField, depVarField1, @x0, options);
@@ -240,17 +258,20 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     title(sprintf('Effective Pixelsize %d um/px',analyVar.sizefactor * 1000000))
     grid on
     %% ==============================================    
-     % Plotting
-    figure;
-    hold on;
-    errorbar(scanIDs, coeff2plotMeanAmp, coeff2plotMeanAmpErr, 'v', 'LineWidth', 1.5,'MarkerFaceColor','g','MarkerEdgeColor','g');
-    ylabel(sprintf('1D Image Reduction Amplitude fit'));
-    hold off;
+     % Plotting AMP
     
-    % Labels and Legend
-    xlabel('Scan ID');
-    legend('Fitted Amplitdue', 'Location', 'NorthWest');
-    grid on
+    if plotAmp 
+        figure;
+        hold on;
+        errorbar(scanIDs, coeff2plotMeanAmp, coeff2plotMeanAmpErr, 'v', 'LineWidth', 1.5,'MarkerFaceColor','g','MarkerEdgeColor','g');
+        ylabel(sprintf('1D Image Reduction Amplitude fit'));
+        hold off;
+        
+        % Labels and Legend
+        xlabel('Scan ID');
+        legend('Fitted Amplitdue', 'Location', 'NorthWest');
+        grid on
+    end
 
     %% ==============================================
     if fitting2Gauss

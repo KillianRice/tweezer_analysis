@@ -53,7 +53,7 @@ function funcOut = zeeman_sfi_triple_gaussian_loss(analyVar, indivDataset, avgDa
             centerGuess = mean(xs);
         end
 
-        centerGuess = 81.93;
+        centerGuess = 82;
 
         % x0 = 12897;
         % x0 = 235.4;
@@ -61,7 +61,7 @@ function funcOut = zeeman_sfi_triple_gaussian_loss(analyVar, indivDataset, avgDa
         % ---------------------------------------------------------
         % Estimate Zeeman splitting
         % ---------------------------------------------------------
-        Delta = 0.08;
+        Delta = 1;
         disp(Delta)
 
         % ---------------------------------------------------------

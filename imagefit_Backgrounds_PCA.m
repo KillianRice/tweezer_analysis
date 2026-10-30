@@ -46,9 +46,13 @@ end
 
 %% Initialize parallel workers
 %Open matlabpool if none open
-if (exist('matlabpool') && matlabpool('size') == 0)
-     matlabpool open;
-end
+% if (exist('matlabpool') && matlabpool('size') == 0)
+%      matlabpool open;
+% end
+% %% Initialize parallel workers
+% if isempty(gcp('nocreate'))
+%     parpool('local', 2);
+% end
 
 %% Loop through each batch file listed in analyVar.basenamevectorAtom
 for basenameNum = 1:analyVar.numBasenamesAtom
@@ -70,7 +74,7 @@ for basenameNum = 1:analyVar.numBasenamesAtom
 %% Loop through each image and find background state
 %%%%%%%-----------------------------------%%%%%%%%%%
     % this loop fits the background for all atom files in this dataset
-    parfor k = 1:indivDataset{basenameNum}.CounterAtom  
+    for k = 1:indivDataset{basenameNum}.CounterAtom  
         % take the inital conditions of the nth image as the projection onto the pcBasis
         InitialCondition = pcCoeffs(k,1:varLim);
         
@@ -114,6 +118,7 @@ end %end loop through batches
 
 %% Cleanup Parallel workspace
 warning('on','all') %% Reenable warnings
+% delete(gcp('nocreate'));
 
 %% Wrap Up
 fclose('all'); % Close any file handles which may be open

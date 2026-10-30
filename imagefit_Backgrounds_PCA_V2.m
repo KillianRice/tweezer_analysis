@@ -44,10 +44,14 @@ elseif analyVar.quickFit == 0
     optimOptions = optimset('Display','off','LargeScale','off');
 end
 
+% %% Initialize parallel workers  (LEGACY)
+% %Open matlabpool if none open
+% if (exist('matlabpool') && matlabpool('size') == 0)
+%      matlabpool open;
+% end
 %% Initialize parallel workers
-%Open matlabpool if none open
-if (exist('matlabpool') && matlabpool('size') == 0)
-     matlabpool open;
+if isempty(gcp('nocreate'))
+    parpool('local', 2);
 end
 
  %% Load the parameters of the ROIs made by
@@ -159,7 +163,8 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                     sprintf('_Tweezer%03d',tweezerNum) ...
                     analyVar.ODimageFilename];
                     
-                dlmwrite(saveName, OD_Tweezer, '\t');
+                %dlmwrite(saveName, OD_Tweezer, '\t'); (LEGACY)
+                writematrix(OD_Tweezer, saveName, 'Delimiter', '\t');
 
                 % Save tweezer ROI raw atom image (image 1)
                 saveName = [analyVar.analyOutDir ...
@@ -167,7 +172,8 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                     sprintf('_TweezerImg1Raw%03d',tweezerNum) ...
                     analyVar.ODimageFilename];
                 
-                dlmwrite(saveName, RawAtomImage_Tweezer, '\t');
+                %dlmwrite(saveName, RawAtomImage_Tweezer, '\t'); (LEGACY)
+                writematrix(RawAtomImage_Tweezer, saveName, 'Delimiter', '\t');
 
                 % Save tweezer ROI raw bkg image (image 2)
                 saveName = [analyVar.analyOutDir ...
@@ -175,16 +181,18 @@ for basenameNum = 1:analyVar.numBasenamesAtom
                     sprintf('_TweezerImg2Raw%03d',tweezerNum) ...
                     analyVar.ODimageFilename];
                 
-                dlmwrite(saveName, RawBkgImage_Tweezer, '\t');
+                %dlmwrite(saveName, RawBkgImage_Tweezer, '\t'); (LEGACY)
+                writematrix(RawBkgImage_Tweezer, saveName, 'Delimiter', '\t');
 
             end
-        end
+        else
 
         
-        %% Save OD Single Image 
-        dlmwrite([analyVar.analyOutDir ...
-            char(indivDataset{basenameNum}.fileAtom(k)) ...
-            analyVar.ODimageFilename], OD_Image_Single, '\t');
+            %% Save OD Single Image 
+            dlmwrite([analyVar.analyOutDir ...
+                char(indivDataset{basenameNum}.fileAtom(k)) ...
+                analyVar.ODimageFilename], OD_Image_Single, '\t'); % (LEGACY)
+        end
         
 
         
@@ -193,6 +201,7 @@ end %end loop through batches
 
 %% Cleanup Parallel workspace
 warning('on','all') %% Reenable warnings
+delete(gcp('nocreate'));
 
 %% Wrap Up
 fclose('all'); % Close any file handles which may be open

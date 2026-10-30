@@ -189,7 +189,7 @@ end
 
 %%add component for tweezer analysis
 if analyVar.UseTweezer
-    %indivDataset = param_ext_ODTotalCounts(analyVar, indivDataset);
+    % indivDataset = param_ext_ODTotalCounts(analyVar, indivDataset);
 end
 
 %% Clean Workspace

@@ -45,27 +45,38 @@ for basenameNum = 1:analyVar.numBasenamesAtom
     paramVals = get_average_scan_param_values(analyVar, indivDataset, basenameNum); % will store the independent variable to plot against based scanned param or given ID
 
     for k = 1:indivDataset{basenameNum}.CounterAtom
-
+             roiFile = fullfile(analyVar.analyOutDir, ...
+             [char(indivDataset{basenameNum}.fileAtom(k)) '_ROIs.mat']);
+ 
+             if ~isfile(roiFile)
+                 error('Missing ROI file:\n%s', roiFile);
+             end
+     
+             S = load(roiFile, 'ODROIs');
         for tweezerNum = 1:numTweezers
             
-            % grab OD image
-            odFile = [analyVar.analyOutDir ...
-                char(indivDataset{basenameNum}.fileAtom(k)) ...
-                sprintf('_Tweezer%03d',tweezerNum) ...
-                analyVar.ODimageFilename];
+%             % grab OD image
+%             odFile = [analyVar.analyOutDir ...
+%                 char(indivDataset{basenameNum}.fileAtom(k)) ...
+%                 sprintf('_Tweezer%03d',tweezerNum) ...
+%                 analyVar.ODimageFilename];
+% 
+%             if ~exist(odFile,'file')
+%                 error('Missing OD image file:\n%s', odFile);
+%             end
+%     
+%             OD = dlmread(odFile);
+            OD = S.ODROIs(:,:,tweezerNum);
 
-            if ~exist(odFile,'file')
-                error('Missing OD image file:\n%s', odFile);
+            if analyVar.dummyScan
+                allParamVals(end+1,1)    = paramVals(k);    %The corresponding imagevcoAtom value of entry
+            else
+                allParamVals(end+1,1)    = paramVals(k) + analyVar.DropTimeOffset; 
             end
-    
-            OD = dlmread(odFile);
-
-
-            allParamVals(end+1,1)    = paramVals(k);    %The corresponding imagevcoAtom value of entry
             allTweezerNums(end+1,1)  = tweezerNum;  %Tweezer number entry
             allODImages{end+1,1}       = OD;        %OD image matrix
             allRawAtomImgFiles{end+1,1}      = char(indivDataset{basenameNum}.fileAtom(k));     %Raw atom image file name
-            allODFiles{end+1,1}      = odFile;      %OD image file
+            %allODFiles{end+1,1}      = odFile;      %OD image file
             allBasenameNums(end+1,1) = basenameNum;    %basename number of entry
             allImageNums(end+1,1)    = k;   %entry number within the basename num (file)
             allTotODCounts(end+1,1) = indivDataset{basenameNum}.OD_TotalCounts(k,tweezerNum);                   % PCA Bkg Subtracted Counts (May be normalized if toggled)
@@ -106,6 +117,8 @@ allTotImg1Counts = allTotCountsImg1Raw(:);
 
 uniqueVals = unique(allParamVals,'sorted');
 uniqueScanIDs = unique(allScanIDs,'sorted');
+% uniqueVals = unique(allParamVals);
+% uniqueScanIDs = unique(allScanIDs);
 
 
 %% Initialize avgDataset Individual entry for each tweezer in a file
@@ -272,7 +285,7 @@ for p = 1:numel(uniqueVals)
 
         sourceInfo.sourceFiles = allRawAtomImgFiles(idx);
 
-        sourceInfo.odFiles = allODFiles(idx);
+        % sourceInfo.odFiles = allODFiles(idx);
 
         sourceInfo.rawODCounts = rawCounts;
 

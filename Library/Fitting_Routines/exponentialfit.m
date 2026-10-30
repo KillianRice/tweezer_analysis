@@ -21,8 +21,9 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     indVarField = 'imagevcoAtom'; % independent variable
     %depVarField = 'sfiIntegral'; % dependent variable
     %depVarField = 'numberAtom'; % dependent variable
-    %depVarField = 'TotalCountsImg1Raw';
-    depVarField = 'cloudRadX';
+    % depVarField = 'TotalCountsImg1Raw';
+    % depVarField = 'cloudRadX';
+    depVarField = 'OD_TotalCounts';
 
     %normalize option (also adjust within initial guess)
     normalize = 0;
@@ -43,7 +44,7 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
             initialguess(2) = (max(xdata)-min(xdata));
             initialguess(3) = min(ydata)/max(ydata);
         else
-            initialguess(1) = 5000;
+            initialguess(1) = max(ydata) - min(ydata);
             initialguess(2) = (max(xdata)-min(xdata));
             initialguess(3) = min(ydata);
         end
@@ -80,10 +81,10 @@ function funcOut = exponentialfit(analyVar, indivDataset, avgDataset)
     %%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     options = struct(...
-        'PlotIndivFits', true,...
+        'PlotIndivFits', false,...
         'PlotAll', true,...
         'PlotAllAvgs', true,...
-        'PlotInitialGuess', false,...
+        'PlotInitialGuess', true,...
         'Statistics', 'gaussian', ...
         'XAxisScale', 'linear');
     
